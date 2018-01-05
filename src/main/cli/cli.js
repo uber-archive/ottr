@@ -34,6 +34,9 @@ import express from 'express';
 import proxy from 'http-proxy-middleware';
 import fs from 'fs';
 import modifyResponse from 'http-proxy-response-rewrite';
+import {packageForBrowser} from './packager';
+import {wrap} from './util';
+import bodyParser from 'body-parser';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -41,25 +44,44 @@ const TESTS_PREFIX = '/_ottr/tests';
 const MAIN_OTTR_JS = '_ottrmain.js';
 
 async function start() {
-  const testFile = process.argv[3];
-  if (!testFile || !fs.existsSync(testFile)) {
+  const testFileOrig = process.argv[3];
+  if (!testFileOrig || !fs.existsSync(testFileOrig)) {
     throw new Error(`usage: ottr localhost:3000 src/test/index.js`);
   }
+
+  const testFile = packageForBrowser(testFileOrig);
   let target = process.argv[2];
   if (!target.includes('://')) target = `http://${target}`;
 
   const app = express();
   let appServer;
 
-  const kill = () => appServer.destroy();
+  let exitCode;
+  const stop = newExitCode => {
+    if (typeof exitCode === 'undefined') exitCode = newExitCode || 0;
+    console.log(`ottr shutting down with code ${exitCode}`);
+    // appServer.close(() => process.exit(exitCode || 0));
+  };
   const ottrPort = await getPort({port: 50505});
-
-  app.post('/_ottr/done', () => {
-    console.log('Got /_ottr/done; killing server');
-    kill();
-  });
-  app.get(TESTS_PREFIX + '/' + MAIN_OTTR_JS, (req, res: express$Response) =>
-    res.redirect('/_ottr/tests/' + testFile)
+  app.post('/_ottr/fail', () => stop(1));
+  app.post('/_ottr/success', () => stop(0));
+  app.post('/_ottr/done', () => stop());
+  app.post(
+    '/_ottr/console/:method',
+    bodyParser.json(),
+    (req: express$Request, res: express$Response) => {
+      (console[req.params.method] || console.log)(...req.body);
+      res.send('OK');
+    }
+  );
+  app.get(
+    `${TESTS_PREFIX}/${MAIN_OTTR_JS}`,
+    wrap(async (req, res: express$Response) => {
+      console.log('waiting');
+      const s = '/_ottr/tests/' + (await testFile);
+      console.log('new url: ' + s);
+      return res.redirect(s);
+    })
   );
   app.use(TESTS_PREFIX, express.static('.'));
 
@@ -83,10 +105,15 @@ async function start() {
       }
     })
   );
-  process.on('exit', kill);
+  process.on('exit', stop);
   appServer = app.listen(ottrPort, () =>
     console.log(`ottr running on http://localhost:${ottrPort} → ${target}`)
   );
+  const tmp = await testFile;
+  console.log('got ' + tmp);
 }
 
-start().catch(e => console.error(e));
+start().catch(e => {
+  console.error('ottr initialization failed', e);
+  process.exit(1);
+});

@@ -24,15 +24,39 @@
 
 // @flow
 
-import 'babel-polyfill';
-import 'whatwg-fetch'
+import 'whatwg-fetch';
 
-//TODO: wrap console.log to send to backend
+window.console = new Proxy(console, {
+  methods: {},
+  get(target, property) {
+    if (typeof property === 'string' && typeof target[property] === 'function') {
+      if (!this.methods[property])
+        this.methods[property] = (...args) => {
+          fetch(`/_ottr/console/${property}`, {
+            method: 'POST',
+            body: JSON.stringify(args),
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          target[property](...args);
+        };
+      return this.methods[property];
+    }
 
-const trimLeadingSlash = str => str[0] === '/' ? str.substring(1) : str;
+    return target[property];
+  }
+});
+
+window.addEventListener('error', e => {
+  console.error(e);
+  ottr.fail();
+});
+
+const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
 
 async function ottr(path: string) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     //TODO: delete old iframe?
     const iframe = document.createElement('iframe');
     iframe.onload = () => resolve(iframe.contentWindow);
@@ -40,12 +64,16 @@ async function ottr(path: string) {
     iframe.src = `http://localhost:${process.env.OTTR_PORT}/${trimLeadingSlash(path)}`;
     // $FlowFixMe
     document.body.appendChild(iframe);
-  })
+  });
 }
 
 Object.assign(ottr, {
   async done() {
-    await fetch('/_ottr/done', {method: 'POST'})
+    await fetch('/_ottr/done', {method: 'POST'});
+  },
+
+  async fail() {
+    await fetch('/_ottr/fail', {method: 'POST'});
   }
 });
 
