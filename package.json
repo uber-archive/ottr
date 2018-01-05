@@ -1,0 +1,71 @@
+{
+  "name": "ottr",
+  "version": "0.1.0",
+  "description": "Run end-to-end tests",
+  "homepage": "https://github.com/uber-node/ottr",
+  "bugs": {
+    "url": "https://github.com/uber-node/ottr/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/uber-node/ottr.git"
+  },
+  "keywords": [
+    "testing",
+    "javascript",
+    "js"
+  ],
+  "author": "Keith Lea",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "bin": {
+    "ottr": "lib/cli.js"
+  },
+  "scripts": {
+    "build": "babel src/main -d lib --source-maps",
+    "build-test": "babel src -d dist-test --source-maps",
+    "test": "npm run build-test && node dist-test/test/index.spec.js",
+    "check": "npm run prettier && npm run lint && npm run test",
+    "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
+    "lint": "flow check && eslint src",
+    "watch": "nodemon --exec 'npm run build' --watch src"
+  },
+  "engines": {
+    "node": ">=6.10",
+    "npm": ">=4.0"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.26.0",
+    "express": "^4.16.2",
+    "get-port": "^3.2.0",
+    "http-proxy-middleware": "^0.17.4",
+    "http-proxy-response-rewrite": "0.0.1",
+    "node-fetch": "^1.7.3",
+    "node-http-proxy-json": "^0.1.6",
+    "source-map-support": "^0.4.18",
+    "whatwg-fetch": "^2.0.3",
+    "yargs": "^8.0.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-eslint": "^6.1.2",
+    "babel-plugin-syntax-flow": "^6.18.0",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-env": "^1.4.0",
+    "babel-preset-es2017": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "babel-preset-stage-3": "^6.24.1",
+    "eslint": "^3.19.0",
+    "eslint-config-uber-es2015": "^3.1.1",
+    "eslint-plugin-babel": "^4.1.1",
+    "eslint-plugin-flowtype": "^2.32.1",
+    "eslint-plugin-you-dont-need-lodash-underscore": "^6.2.1",
+    "flow-bin": "^0.56.0",
+    "flow-typed": "^2.2.0",
+    "nodemon": "^1.14.7",
+    "prettier": "^1.7.4",
+    "source-map-support": "^0.4.15",
+    "tape": "^4.6.3"
+  }
+}
