@@ -3,7 +3,8 @@
 export type Test = {name: string, path: string};
 
 export type ReduxStateType = {
-  +tests: {|
+  +runner: {|
+    +concurrency: number,
     +tests: Test[]
   |}
 }

@@ -1,6 +1,12 @@
 // @flow
 
-import tests from './tests';
 import {combineReducers} from 'redux';
+import {combineEpics} from 'redux-observable';
+import {reducer as runner, epic as runnerEpic} from './runner';
+import type {RunnerAction} from './runner';
 
-export default combineReducers({tests});
+type StartupAction = {type: 'STARTUP'};
+
+export const reducer = combineReducers({runner});
+export const epic = combineEpics(runnerEpic);
+export type Action = StartupAction | RunnerAction;
