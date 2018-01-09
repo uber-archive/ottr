@@ -11,7 +11,7 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
         devtool: 'inline-source-map',
         entry: {
           tests: path.resolve(jsEntryPointPath),
-          ottr: path.resolve(__dirname, '../app/index.js')
+          ottr: path.resolve(__dirname, '../ui/index.js')
         },
         output: {path: folder, filename: '[name]-bundle.js'},
         resolve: {alias: {fs: path.resolve(__dirname, 'noop.js')}}

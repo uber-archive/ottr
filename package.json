@@ -17,12 +17,12 @@
   ],
   "author": "Keith Lea",
   "license": "MIT",
-  "main": "lib/index.js",
+  "main": "lib/api/index.js",
   "bin": {
     "ottr": "lib/cli/cli.js"
   },
   "scripts": {
-    "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -R src/main/static/* lib/static",
+    "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -R src/main/ui/static/* lib/static",
     "build-test": "babel src -d dist-test --source-maps",
     "test": "npm run build-test && node dist-test/test/index.spec.js",
     "check": "npm run prettier && npm run lint && npm run test",
