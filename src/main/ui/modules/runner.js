@@ -2,7 +2,6 @@
 
 /* eslint-env browser */
 
-import {compose} from 'redux';
 import type {ActionsObservable} from 'redux-observable';
 import type {ReduxStateType} from '../types';
 import type {Action} from '.';
@@ -26,9 +25,8 @@ export const reducer = (state: RunnerState = initialState, action: RunnerAction)
         if (numberOfTestsToStart > 0) {
           numberOfTestsToStart--;
           return {...test, running: true};
-        } else {
-          return test;
         }
+        return test;
       });
       return {...state, tests};
     default:

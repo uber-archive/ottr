@@ -23,7 +23,7 @@ export default function TestRunner({test}: {test: Test}) {
   const inner = {width, height, transform: `scale(${factor})`, transformOrigin: '0 0'};
   return (
     <div key={test.name} style={outer}>
-      <div style={{background: 'gray', fontSize: '16px'}}>{test.name}</div>
+      <div style={{background: 'lightgray', fontSize: '16px', padding: '0.5em'}}>{test.name}</div>
       <iframe
         key={test.name}
         style={inner}
