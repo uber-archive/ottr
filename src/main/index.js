@@ -25,20 +25,18 @@
 // @flow
 
 import 'whatwg-fetch';
+import io from 'socket.io-client';
 
 window.console = new Proxy(console, {
+  websocket: null,
   methods: {},
   get(target, property) {
     if (typeof property === 'string' && typeof target[property] === 'function') {
       if (!this.methods[property])
         this.methods[property] = (...args) => {
-          fetch(`/_ottr/console/${property}`, {
-            method: 'POST',
-            body: JSON.stringify(args),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
+          if (!this.websocket) this.websocket = io({path: '/_ottr/socket.io'});
+
+          this.websocket.emit('console', [property, ...args]);
           target[property](...args);
         };
       return this.methods[property];

@@ -37,6 +37,7 @@ import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
 import {wrap} from './util';
 import bodyParser from 'body-parser';
+import io from 'socket.io';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -93,6 +94,7 @@ async function start() {
       changeOrigin: true,
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
         const contentType = proxyRes.headers['content-type'];
+        delete proxyRes.headers['content-security-policy'];
         if (contentType && contentType.match(/.*text\/html.*/i)) {
           const originalLength = proxyRes.headers['content-length'];
           if (originalLength)
@@ -108,6 +110,11 @@ async function start() {
   process.on('exit', stop);
   appServer = app.listen(ottrPort, () =>
     console.log(`ottr running on http://localhost:${ottrPort} → ${target}`)
+  );
+  const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
+
+  webSocketSession.on('connection', client =>
+    client.on('console', data => (console[data[0]] || console.log)(...data.slice(1)))
   );
   const tmp = await testFile;
   console.log('got ' + tmp);
