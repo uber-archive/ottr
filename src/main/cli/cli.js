@@ -36,8 +36,8 @@ import fs from 'fs';
 import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
 import {wrap} from './util';
-import bodyParser from 'body-parser';
 import io from 'socket.io';
+import path from 'path';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -64,17 +64,7 @@ async function start() {
     // appServer.close(() => process.exit(exitCode || 0));
   };
   const ottrPort = await getPort({port: 50505});
-  app.post('/_ottr/fail', () => stop(1));
-  app.post('/_ottr/success', () => stop(0));
-  app.post('/_ottr/done', () => stop());
-  app.post(
-    '/_ottr/console/:method',
-    bodyParser.json(),
-    (req: express$Request, res: express$Response) => {
-      (console[req.params.method] || console.log)(...req.body);
-      res.send('OK');
-    }
-  );
+  app.use('/_ottr', express.static(path.resolve(__dirname, '../static')));
   app.get(
     `${TESTS_PREFIX}/${MAIN_OTTR_JS}`,
     wrap(async (req, res: express$Response) => {
@@ -114,7 +104,7 @@ async function start() {
   const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
 
   webSocketSession.on('connection', client =>
-    client.on('console', data => (console[data[0]] || console.log)(...data.slice(1)))
+    client.on('console', data => (console[data[2]] || console.log)(...data.slice(3)))
   );
   const tmp = await testFile;
   console.log('got ' + tmp);

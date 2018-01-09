@@ -1,3 +1,7 @@
 // @flow
 
-export const wrap = fn => (...args: any) => fn(...args).catch(args[2]);
+export const wrap = (fn: (express$Request, express$Response) => any) => (
+  req: express$Request,
+  res: express$Response,
+  next: express$NextFunction
+) => fn(req, res).catch(next);

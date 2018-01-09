@@ -23,56 +23,75 @@
  */
 
 // @flow
+/* eslint-env browser */
 
 import 'whatwg-fetch';
-import io from 'socket.io-client';
-
-window.console = new Proxy(console, {
-  websocket: null,
-  methods: {},
-  get(target, property) {
-    if (typeof property === 'string' && typeof target[property] === 'function') {
-      if (!this.methods[property])
-        this.methods[property] = (...args) => {
-          if (!this.websocket) this.websocket = io({path: '/_ottr/socket.io'});
-
-          this.websocket.emit('console', [property, ...args]);
-          target[property](...args);
-        };
-      return this.methods[property];
-    }
-
-    return target[property];
-  }
-});
-
-window.addEventListener('error', e => {
-  console.error(e);
-  ottr.fail();
-});
+import tapeTest from 'tape';
+import {currentTestName, currentTestSession, isMainTestRunner} from './session';
+import {nonnull} from './util';
+import {done} from './socket';
 
 const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
 
-async function ottr(path: string) {
+function startTest(path: string) {
   return new Promise(resolve => {
-    //TODO: delete old iframe?
+    const width = 1024;
+    const height = 800;
+    const factor = 0.2;
     const iframe = document.createElement('iframe');
-    iframe.onload = () => resolve(iframe.contentWindow);
+    iframe.width = `${width}`;
+    iframe.height = `${height}`;
+    iframe.onload = () => resolve(iframe);
+    iframe.src = `/${trimLeadingSlash(path)}`;
+    iframe.style.transform = `scale(${factor})`;
+    iframe.style.transformOrigin = '0 0';
+    const div = document.createElement('div');
+    div.style.overflow = 'hidden';
+    div.style.width = `${width * factor}`;
+    div.style.height = `${height * factor}`;
+    div.style.margin = '20';
+    div.appendChild(iframe);
     // $FlowFixMe
-    iframe.src = `http://localhost:${process.env.OTTR_PORT}/${trimLeadingSlash(path)}`;
-    // $FlowFixMe
-    document.body.appendChild(iframe);
+    document.body.appendChild(div);
   });
 }
 
-Object.assign(ottr, {
-  async done() {
-    await fetch('/_ottr/done', {method: 'POST'});
-  },
-
-  async fail() {
-    await fetch('/_ottr/fail', {method: 'POST'});
+if (currentTestSession) {
+  if (isMainTestRunner) {
+    console.log(`ottr[${currentTestSession}]: preparing to run tests`);
+  } else if (currentTestName) {
+    console.log(`ottr[${currentTestSession}]: preparing to run ${currentTestName}`);
   }
-});
+} else {
+  console.log('ottr: this frame is not for running anything!');
+}
 
-export default ottr;
+const addQueryParams = (path, params: {[string]: string | number | boolean}) => {
+  const extraParams = Object.keys(params)
+    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k].toString())}`)
+    .join('&');
+  return path.includes('?') ? `${path}&${extraParams}` : `${path}?${extraParams}`;
+};
+
+const testNames = {};
+
+export function test(name: string, path: string, fn: (t: any) => any) {
+  if (!name) {
+    throw new Error(`test name is ${name}`);
+  }
+  if (!isMainTestRunner && !currentTestName) {
+    return;
+  }
+  if (testNames[name]) {
+    throw new Error(`ottr cannot handle duplicate test names: ${name}`);
+  }
+
+  if (isMainTestRunner) {
+    startTest(
+      addQueryParams(path, {'ottr-session': nonnull(currentTestSession), 'ottr-test': name})
+    );
+  } else if (name === currentTestName) {
+    tapeTest.onFinish(done);
+    tapeTest(name, fn);
+  }
+}

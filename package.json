@@ -22,13 +22,13 @@
     "ottr": "lib/cli/cli.js"
   },
   "scripts": {
-    "build": "babel src/main -d lib --source-maps",
+    "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -R src/main/static/* lib/static",
     "build-test": "babel src -d dist-test --source-maps",
     "test": "npm run build-test && node dist-test/test/index.spec.js",
     "check": "npm run prettier && npm run lint && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
     "lint": "flow check && eslint src",
-    "watch": "nodemon --exec 'npm run build' --watch src"
+    "watch": "nodemon --ext js,html --exec 'npm run build' --watch src"
   },
   "engines": {
     "node": ">=6.10",
