@@ -4,6 +4,6 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Home from './Home';
+import App from './components/app';
 
-ReactDOM.render(<Home />, document.getElementById('ottr-app'));
+ReactDOM.render(<App />, document.getElementById('ottr-app'));

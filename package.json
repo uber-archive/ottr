@@ -25,9 +25,10 @@
     "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -R src/main/ui/static/* lib/static",
     "build-test": "babel src -d dist-test --source-maps",
     "test": "npm run build-test && node dist-test/test/index.spec.js",
-    "check": "npm run prettier && npm run lint && npm run test",
+    "flow": "flow check",
+    "check": "npm run prettier && npm run lint && npm run flow && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
-    "lint": "flow check && eslint src",
+    "lint": "eslint src",
     "watch": "nodemon --ext js,html --exec 'npm run build' --watch src"
   },
   "engines": {
@@ -43,6 +44,9 @@
     "http-proxy-response-rewrite": "0.0.1",
     "node-fetch": "^1.7.3",
     "react": "^16.2.0",
+    "react-document-title": "^2.0.3",
+    "react-redux": "^5.0.6",
+    "redux": "^3.7.2",
     "socket.io": "^2.0.4",
     "source-map-support": "^0.4.18",
     "whatwg-fetch": "^2.0.3",

@@ -22,6 +22,7 @@
     "max-len": 0,
     "no-irregular-whitespace": 0,
     "no-multiple-empty-lines": 0,
-    "no-inline-comments": 0
+    "no-inline-comments": 0,
+    "react/prop-types": 0
   }
 }
