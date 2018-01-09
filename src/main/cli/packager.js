@@ -6,12 +6,14 @@ import path from 'path';
 export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
   new Promise((resolve, reject) => {
     const folder = path.resolve('.ottr-webpack');
-    const filename = 'ottr-bundle.js';
     webpack(
       {
         devtool: 'inline-source-map',
-        entry: path.resolve(jsEntryPointPath),
-        output: {path: folder, filename},
+        entry: {
+          tests: path.resolve(jsEntryPointPath),
+          ottr: path.resolve(__dirname, '../app/index.js')
+        },
+        output: {path: folder, filename: '[name]-bundle.js'},
         resolve: {alias: {fs: path.resolve(__dirname, 'noop.js')}}
       },
       (err, stats) => {
@@ -29,7 +31,7 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
           reject(err);
           return;
         }
-        resolve(path.relative(path.resolve(), `${folder}/${filename}`));
+        resolve(folder);
       }
     );
   });

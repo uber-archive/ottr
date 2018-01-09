@@ -1,6 +1,7 @@
 {
   "plugins": ["syntax-flow", "transform-flow-strip-types"],
   "presets": [
+    "react",
     "stage-2",
     ["env", {
       "targets": {

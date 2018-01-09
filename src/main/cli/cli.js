@@ -42,7 +42,6 @@ import path from 'path';
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
 const TESTS_PREFIX = '/_ottr/tests';
-const MAIN_OTTR_JS = '_ottrmain.js';
 
 async function start() {
   const testFileOrig = process.argv[3];
@@ -50,7 +49,7 @@ async function start() {
     throw new Error(`usage: ottr localhost:3000 src/test/index.js`);
   }
 
-  const testFile = packageForBrowser(testFileOrig);
+  await packageForBrowser(testFileOrig);
   let target = process.argv[2];
   if (!target.includes('://')) target = `http://${target}`;
 
@@ -65,18 +64,9 @@ async function start() {
   };
   const ottrPort = await getPort({port: 50505});
   app.use('/_ottr', express.static(path.resolve(__dirname, '../static')));
-  app.get(
-    `${TESTS_PREFIX}/${MAIN_OTTR_JS}`,
-    wrap(async (req, res: express$Response) => {
-      console.log('waiting');
-      const s = '/_ottr/tests/' + (await testFile);
-      console.log('new url: ' + s);
-      return res.redirect(s);
-    })
-  );
   app.use(TESTS_PREFIX, express.static('.'));
 
-  const scriptTag = `<script src='${TESTS_PREFIX}/${MAIN_OTTR_JS}'></script>`;
+  const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
   app.use(
     '/',
     proxy(shouldProxy, {
@@ -106,8 +96,6 @@ async function start() {
   webSocketSession.on('connection', client =>
     client.on('console', data => (console[data[2]] || console.log)(...data.slice(3)))
   );
-  const tmp = await testFile;
-  console.log('got ' + tmp);
 }
 
 start().catch(e => {

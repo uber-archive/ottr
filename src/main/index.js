@@ -28,33 +28,7 @@
 import 'whatwg-fetch';
 import tapeTest from 'tape';
 import {currentTestName, currentTestSession, isMainTestRunner} from './session';
-import {nonnull} from './util';
 import {done} from './socket';
-
-const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
-
-function startTest(path: string) {
-  return new Promise(resolve => {
-    const width = 1024;
-    const height = 800;
-    const factor = 0.2;
-    const iframe = document.createElement('iframe');
-    iframe.width = `${width}`;
-    iframe.height = `${height}`;
-    iframe.onload = () => resolve(iframe);
-    iframe.src = `/${trimLeadingSlash(path)}`;
-    iframe.style.transform = `scale(${factor})`;
-    iframe.style.transformOrigin = '0 0';
-    const div = document.createElement('div');
-    div.style.overflow = 'hidden';
-    div.style.width = `${width * factor}`;
-    div.style.height = `${height * factor}`;
-    div.style.margin = '20';
-    div.appendChild(iframe);
-    // $FlowFixMe
-    document.body.appendChild(div);
-  });
-}
 
 if (currentTestSession) {
   if (isMainTestRunner) {
@@ -66,14 +40,8 @@ if (currentTestSession) {
   console.log('ottr: this frame is not for running anything!');
 }
 
-const addQueryParams = (path, params: {[string]: string | number | boolean}) => {
-  const extraParams = Object.keys(params)
-    .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k].toString())}`)
-    .join('&');
-  return path.includes('?') ? `${path}&${extraParams}` : `${path}?${extraParams}`;
-};
-
-const testNames = {};
+const ottrTests = {};
+window.ottrTests = ottrTests;
 
 export function test(name: string, path: string, fn: (t: any) => any) {
   if (!name) {
@@ -82,15 +50,12 @@ export function test(name: string, path: string, fn: (t: any) => any) {
   if (!isMainTestRunner && !currentTestName) {
     return;
   }
-  if (testNames[name]) {
+  if (ottrTests[name]) {
     throw new Error(`ottr cannot handle duplicate test names: ${name}`);
   }
+  ottrTests[name] = {name, path, fn};
 
-  if (isMainTestRunner) {
-    startTest(
-      addQueryParams(path, {'ottr-session': nonnull(currentTestSession), 'ottr-test': name})
-    );
-  } else if (name === currentTestName) {
+  if (!isMainTestRunner && name === currentTestName) {
     tapeTest.onFinish(done);
     tapeTest(name, fn);
   }

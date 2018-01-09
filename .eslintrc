@@ -3,8 +3,13 @@
   "env": {
     "node": true
   },
-  "extends": ["eslint-config-uber-es2015"],
+  "extends": ["eslint-config-uber-es2015", "plugin:react/recommended"],
   "plugins": ["flowtype", "babel"],
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
   "rules": {
     "flowtype/define-flow-type": 1,
     "indent": 0,
