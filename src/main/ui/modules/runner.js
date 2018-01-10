@@ -46,7 +46,7 @@ export const reducer = (state: RunnerState = initialState, action: RunnerAction)
       const newTests = action.payload.tests;
       return {
         ...state,
-        tests: state.tests.map(test => fixRunningStatus({...test, ...(newTests[test.name] || {})}))
+        tests: state.tests.map(test => fixRunningStatus({...test, ...newTests[test.name]}))
       };
     default:
       return state;
