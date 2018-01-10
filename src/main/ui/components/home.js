@@ -1,30 +1,41 @@
 // @flow
 
 import React from 'react';
-import TestRunner from './test-runner';
 import {connect} from 'react-redux';
-import type {ReduxStateType, Test} from '../types';
+import type {ReduxStateType} from '../types';
 import DocumentTitle from 'react-document-title';
+import type {Test} from '../../types';
+import TestDisplay from './test-display';
+
+const EMOJI_CHECK = '\u2705';
+const EMOJI_X = '\u274C';
 
 function Home({tests}: {tests: Test[]}) {
-  const running = tests.filter(test => test.running);
+  const running = tests.filter(t => t.running);
+  const failed = tests.filter(t => t.error);
+  const done = tests.filter(t => t.done);
+  const emojis =
+    failed.length > 0
+      ? failed.map(() => EMOJI_X).join('')
+      : done.length === tests.length ? EMOJI_CHECK : '';
+  const progress =
+    done.length !== tests.length ? ` ${Math.round(done.length / tests.length * 100)}%` : '';
   return (
     <div>
-      <DocumentTitle title={`ottr (${tests.length})`} />
+      <DocumentTitle title={`ottr ${emojis}${progress}`} />
       <div style={{display: 'flex'}}>
-        <div><img src="images/ottr.jpg" width={100} /></div>
+        <div>
+          <img src="images/ottr.jpg" width={100} />
+        </div>
         <div>
           <h1>ottr</h1>
-          running {running.length}<br/>
-          failed {tests.filter(t => t.error).length}<br/>
-          queued {tests.filter(t => !t.done).length}<br/>
+          <div>running {running.length}</div>
+          <div>failed {failed.length}</div>
+          <div>queued {tests.length - done.length}</div>
         </div>
       </div>
-      <div style={{display: 'flex'}}>
-        {running.map(test => <TestRunner test={test} key={test.name} />)}
-      </div>
-      <div style={{display: 'flex'}}>
-        {running.map(test => <TestRunner test={test} key={test.name} />)}
+      <div style={{display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start'}}>
+        {tests.map(test => <TestDisplay key={test.name} test={test} />)}
       </div>
     </div>
   );

@@ -1,15 +1,10 @@
 // @flow
 
-export type Test = {
-  name: string,
-  path: string,
-  running: boolean,
-  done: boolean,
-  error: boolean
-};
+import type {Test} from '../types';
 
 export type ReduxStateType = {
   +runner: {|
+    +sessionId: string,
     +concurrency: number,
     +tests: Test[]
   |}

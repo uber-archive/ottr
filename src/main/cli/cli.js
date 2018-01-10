@@ -35,9 +35,8 @@ import proxy from 'http-proxy-middleware';
 import fs from 'fs';
 import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
-import {wrap} from './util';
-import io from 'socket.io';
 import path from 'path';
+import {setupEndpointsAfter, setupEndpointsBefore} from './endpoints';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -46,7 +45,7 @@ const TESTS_PREFIX = '/_ottr/tests';
 async function start() {
   const testFileOrig = process.argv[3];
   if (!testFileOrig || !fs.existsSync(testFileOrig)) {
-    throw new Error(`usage: ottr localhost:3000 src/test/index.js`);
+    throw new Error('usage: ottr localhost:3000 src/test/index.js');
   }
 
   await packageForBrowser(testFileOrig);
@@ -54,19 +53,9 @@ async function start() {
   if (!target.includes('://')) target = `http://${target}`;
 
   const app = express();
-  let appServer;
-
-  let exitCode;
-  const stop = newExitCode => {
-    if (typeof exitCode === 'undefined') exitCode = newExitCode || 0;
-    console.log(`ottr shutting down with code ${exitCode}`);
-    // appServer.close(() => process.exit(exitCode || 0));
-  };
-  const ottrPort = await getPort({port: 50505});
   app.use('/_ottr', express.static(path.resolve(__dirname, '../static')));
   app.use(TESTS_PREFIX, express.static('.'));
 
-  const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
   app.use(
     '/',
     proxy(shouldProxy, {
@@ -77,6 +66,7 @@ async function start() {
         delete proxyRes.headers['content-security-policy'];
         if (contentType && contentType.match(/.*text\/html.*/i)) {
           const originalLength = proxyRes.headers['content-length'];
+          const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
           if (originalLength)
             proxyRes.headers['content-length'] = +originalLength + scriptTag.length;
 
@@ -87,15 +77,12 @@ async function start() {
       }
     })
   );
-  process.on('exit', stop);
-  appServer = app.listen(ottrPort, () =>
+  setupEndpointsBefore(app);
+  const ottrPort = await getPort({port: 50505});
+  let appServer = app.listen(ottrPort, () =>
     console.log(`ottr running on http://localhost:${ottrPort} → ${target}`)
   );
-  const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
-
-  webSocketSession.on('connection', client =>
-    client.on('console', data => (console[data[2]] || console.log)(...data.slice(3)))
-  );
+  setupEndpointsAfter(appServer);
 }
 
 start().catch(e => {
