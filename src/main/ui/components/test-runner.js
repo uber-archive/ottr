@@ -17,7 +17,7 @@ export default function TestRunner({test, fullscreen}: {test: Test, fullscreen?:
   };
   return (
     <div key={test.name} style={outer}>
-      <iframe key={test.name} style={inner} src={getTestUrl(test)} />
+      <iframe key={`${test.name}-${test.iteration}`} style={inner} src={getTestUrl(test)} />
     </div>
   );
 }

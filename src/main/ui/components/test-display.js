@@ -19,7 +19,7 @@ const FontAwesomeWrapper = styled.a`
   color: inherit;
 `;
 
-const FontAwesomeButton = (props : any) => (
+const FontAwesomeButton = (props: any) => (
   <FontAwesomeWrapper href={props.href} target={props.target}>
     <FontAwesome {...props} />
   </FontAwesomeWrapper>
@@ -46,9 +46,9 @@ const TestName = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
-    cursor: pointer;
-:hover {
-    transform: scale(1.1)
+  cursor: pointer;
+  :hover {
+    transform: scale(1.1);
   }
 `;
 
@@ -57,7 +57,6 @@ const Header = styled.div`
   align-items: center;
   background: ${colorFromTestProp};
   color: ${props => (props.test.error ? 'white' : 'black')};
-  
 `;
 
 const getDisplayText = test =>
@@ -135,22 +134,19 @@ class TestDisplay extends React.Component<Props, State> {
     const {error, done, running, output, name} = test;
     return (
       <Outer test={test} fullscreen={this.state.fullscreen}>
-        <Header test={test} onClick={this.toggleFullscreen}>
-          <TestName title={name}>
+        <Header test={test}>
+          <TestName title={name} onClick={this.toggleFullscreen}>
+            {running && <FontAwesome name="circle-o-notch" style={iconStyle} spin />}
             {error && <FontAwesome name="exclamation-triangle" style={iconStyle} />}
             {done && !error && <FontAwesome name="check-circle" style={iconStyle} />}
             {name}
           </TestName>
           <div style={{whiteSpace: 'nowrap'}}>
+            <FontAwesomeButton name={running || done ? 'refresh' : 'play'} onClick={this.restart} />
             <FontAwesomeButton
-                name={running || done ? 'refresh' : 'play'}
-                spin={running}
-                onClick={this.restart}
-            />
-            <FontAwesomeButton
-                name="window-restore"
-                href={getTestUrl(this.props.test)}
-                target="_blank"
+              name="window-restore"
+              href={getTestUrl(this.props.test)}
+              target="_blank"
             />
             {running && <FontAwesomeButton name="close" onClick={this.stop} />}
           </div>
