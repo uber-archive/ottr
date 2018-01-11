@@ -9,77 +9,87 @@ import {Observable} from 'rxjs/Observable';
 import {combineEpics} from 'redux-observable';
 import type {Test} from '../../types';
 import type {MiddlewareAPI} from 'redux';
+import produce from 'immer';
+import {getTestsInSession} from '../ui-util';
 
 type RunnerState = $PropertyType<ReduxStateType, 'runner'>;
 
+type UpdateSessionAction = {
+  type: 'UPDATE_SESSION',
+  payload: {id: string, tests: {[string]: Test}}
+};
 export type RunnerAction =
-  | {type: 'START_TEST', name: string}
-  | {type: 'STOP_TEST', name: string}
-  | {type: 'START_SOME_TESTS'}
-  | {type: 'UPDATE_SESSION', payload: {tests: {[string]: Test}}};
+  | {type: 'START_TEST', session: string, name: string}
+  | {type: 'STOP_TEST', session: string, name: string}
+  | {type: 'START_SOME_TESTS', session: string}
+  | UpdateSessionAction;
 
-const fillMissingFields = test => ({...test, iteration: test.iteration || 0});
-
-const fixRunningStatus = test => ({...test, running: test.running && !test.done});
-
-const initialState: RunnerState = {
-  sessionId: window.ottrSessionId,
-  concurrency: 4,
-  tests: Object.keys(window.ottrTests).map(name => fillMissingFields(window.ottrTests[name]))
+const normalizeTestObject = test => {
+  test.iteration = test.iteration || 0;
+  test.running = test.running && !test.done;
 };
 
-export const restart = (name: string): RunnerAction => ({type: 'START_TEST', name});
+const initialState: RunnerState = {
+  concurrency: 4,
+  sessions: {}
+};
 
-export const stop = (name: string): RunnerAction => ({type: 'STOP_TEST', name});
+export const restart = (session: string, name: string): RunnerAction => ({
+  type: 'START_TEST',
+  session,
+  name
+});
+
+export const stop = (session: string, name: string): RunnerAction => ({
+  type: 'STOP_TEST',
+  session,
+  name
+});
 
 export const reducer = (state: RunnerState = initialState, action: RunnerAction): RunnerState => {
   switch (action.type) {
-    case 'START_SOME_TESTS':
-      const running = state.tests.filter(test => test.running);
-      let numberOfTestsToStart = state.concurrency - running.length;
-      const tests = state.tests.map(test => {
-        if (!test.running && !test.done && numberOfTestsToStart > 0) {
-          numberOfTestsToStart--;
-          return {...test, running: true};
+    case 'START_SOME_TESTS': {
+      const {session} = action;
+      return produce(state, (s: RunnerState) => {
+        const tests = getTestsInSession(s.sessions[session]);
+        let numberOfTestsToStart = s.concurrency - tests.filter(test => test.running).length;
+        for (const test of tests) {
+          if (!test.running && !test.done && numberOfTestsToStart > 0) {
+            numberOfTestsToStart--;
+            test.running = true;
+          }
         }
-        return test;
       });
-      return {...state, tests};
-    case 'START_TEST':
-      const startTestName = action.name;
-      return {
-        ...state,
-        tests: state.tests.map(
-          test =>
-            test.name === startTestName
-              ? {
-                  ...test,
-                  done: false,
-                  error: false,
-                  output: undefined,
-                  running: true,
-                  skipped: false,
-                  iteration: test.iteration + 1
-                }
-              : test
-        )
-      };
-    case 'STOP_TEST':
-      const stopTestName = action.name;
-      return {
-        ...state,
-        tests: state.tests.map(
-          test => (test.name === stopTestName ? {...test, running: false, skipped: true} : test)
-        )
-      };
-    case 'UPDATE_SESSION':
-      const newTests = action.payload.tests;
-      return {
-        ...state,
-        tests: state.tests.map(test =>
-          fillMissingFields(fixRunningStatus({...test, ...(newTests[test.name] || {})}))
-        )
-      };
+    }
+    case 'START_TEST': {
+      const {session, name} = action;
+      return produce(state, (s: RunnerState) => (s.sessions[session].tests[name].running = true));
+    }
+    case 'STOP_TEST': {
+      const {session, name} = action;
+      return produce(state, (s: RunnerState) => {
+        const test = s.sessions[session].tests[name];
+        test.running = false;
+        test.skipped = true;
+      });
+    }
+    case 'UPDATE_SESSION': {
+      const {payload: {id, tests}} = action;
+      return produce(state, (s: RunnerState) => {
+        let localSession = s.sessions[id];
+        if (!localSession) {
+          localSession = s.sessions[id] = {id, names: [], tests: {}};
+        }
+        for (const name in tests) {
+          const testFromServer = tests[name];
+          localSession.tests[name] = {...(localSession.tests[name] || {}), ...testFromServer};
+          normalizeTestObject(localSession.tests[name]);
+          if (!localSession.names.includes(name)) {
+            localSession.names.push(name);
+          }
+        }
+      });
+    }
     default:
       return state;
   }
@@ -89,26 +99,30 @@ const startTestsEpic = (
   action$: ActionsObservable<Action>,
   store: MiddlewareAPI<ReduxStateType, Action>
 ) =>
-  action$.ofType('STARTUP', 'UPDATE_SESSION').mergeMap(() =>
-    Observable.if(() => {
+  action$
+    .ofType('UPDATE_SESSION')
+    .filter((action: UpdateSessionAction) => {
       const state = store.getState().runner;
-      return state.concurrency - state.tests.filter(test => test.running).length > 0;
-    }, Observable.of({type: 'START_SOME_TESTS'}))
-  );
+      const session = state.sessions[action.payload.id];
+      if (!session) {
+        return false;
+      }
+      const tests = getTestsInSession(session);
+      const running = tests.filter(t => t.running);
+      const queued = tests.filter(t => !t.running && !t.done && !t.skipped);
+      const shouldBeRunning = Math.min(queued.length, state.concurrency);
+      return running.length < shouldBeRunning;
+    })
+    .switchMap((action: UpdateSessionAction) =>
+      Observable.of({
+        type: 'START_SOME_TESTS',
+        session: action.payload.id
+      })
+    );
 
-const pollSessionEpic = (
-  action$: ActionsObservable<Action>,
-  store: MiddlewareAPI<ReduxStateType, Action>
-) =>
-  action$.ofType('STARTUP').switchMap(() =>
-    Observable.timer(0, 1000)
-      .takeUntil(action$.ofType('SHUTDOWN'))
-      .exhaustMap(() =>
-        // $FlowFixMe
-        Observable.ajax({url: `/_ottr/api/session/${store.getState().runner.sessionId}`})
-          .map(res => ({type: 'UPDATE_SESSION', payload: res.response}))
-          .catch(error => Observable.of({type: 'SESSION_ERROR', error}))
-      )
-  );
+export const pollSession = async (sessionId: string) => ({
+  type: 'UPDATE_SESSION',
+  payload: (await fetch(`/_ottr/api/session/${sessionId}`)).json()
+});
 
-export const epic = combineEpics(startTestsEpic, pollSessionEpic);
+export const epic = combineEpics(startTestsEpic);

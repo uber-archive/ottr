@@ -37,6 +37,7 @@ import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
 import path from 'path';
 import {setupEndpointsAfter, setupEndpointsBefore} from './endpoints';
+import {UI_BASE_URI} from '../util';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -53,7 +54,10 @@ async function start() {
   if (!target.includes('://')) target = `http://${target}`;
 
   const app = express();
-  app.use('/_ottr', express.static(path.resolve(__dirname, '../static')));
+  app.use(UI_BASE_URI, express.static(path.resolve(__dirname, '../static')));
+  app.use(`${UI_BASE_URI}/*`, (req: express$Request, res: express$Response) =>
+    res.sendFile(path.resolve(__dirname, '../static/index.html'))
+  );
   app.use(TESTS_PREFIX, express.static('.'));
 
   app.use(

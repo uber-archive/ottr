@@ -18,7 +18,7 @@ const assertInTestOrMainFrame = action => {
   }
 };
 
-const emitEvent = (name, args = []) => {
+export const emitEvent = (name: string, ...args: mixed[]) => {
   assertInTestOrMainFrame(`emit ${name}`);
   getWebSocket().emit(name, [currentTestSession, currentTestName, ...args]);
 };
@@ -35,7 +35,7 @@ if (currentTestSession) {
       if (typeof property === 'string' && typeof target[property] === 'function') {
         if (!this.methods[property]) {
           this.methods[property] = (...args) => {
-            emitEvent('console', [property, ...args]);
+            emitEvent('console', property, ...args);
             target[property](...args);
           };
         }

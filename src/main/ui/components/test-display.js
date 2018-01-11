@@ -95,8 +95,8 @@ const bestLine = output => {
 
 type Props = {
   test: Test,
-  restart: string => any,
-  stop: string => any
+  restart: (string, string) => any,
+  stop: (string, string) => any
 };
 
 type State = {
@@ -120,9 +120,9 @@ const firstLineOutputStyle = {
 class TestDisplay extends React.Component<Props, State> {
   state = {};
 
-  stop = () => this.props.stop(this.props.test.name);
+  stop = () => this.props.stop(this.props.test.session, this.props.test.name);
 
-  restart = () => this.props.restart(this.props.test.name);
+  restart = () => this.props.restart(this.props.test.session, this.props.test.name);
 
   toggleOutput = () => this.setState(state => ({showOutput: !state.showOutput}));
 
@@ -143,11 +143,7 @@ class TestDisplay extends React.Component<Props, State> {
           </TestName>
           <div style={{whiteSpace: 'nowrap'}}>
             <FontAwesomeButton name={running || done ? 'refresh' : 'play'} onClick={this.restart} />
-            <FontAwesomeButton
-              name="window-restore"
-              href={getTestUrl(this.props.test)}
-              target="_blank"
-            />
+            <FontAwesomeButton name="window-restore" href={getTestUrl(test)} target="_blank" />
             {running && <FontAwesomeButton name="close" onClick={this.stop} />}
           </div>
         </Header>

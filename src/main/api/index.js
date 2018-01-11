@@ -28,7 +28,7 @@
 import 'whatwg-fetch';
 import tapeTest from 'tape';
 import {currentTestName, currentTestSession, isMainTestRunner} from './session';
-import {done} from './socket';
+import {done, emitEvent} from './socket';
 
 if (currentTestSession) {
   if (isMainTestRunner) {
@@ -41,7 +41,6 @@ if (currentTestSession) {
 }
 
 const ottrTests = {};
-window.ottrTests = ottrTests;
 
 export function test(name: string, path: string, fn: (t: any) => any) {
   if (!name) {
@@ -54,8 +53,12 @@ export function test(name: string, path: string, fn: (t: any) => any) {
     throw new Error(`ottr cannot handle duplicate test names: ${name}`);
   }
   ottrTests[name] = {name, path, fn};
-
-  if (!isMainTestRunner && name === currentTestName) {
+  if (isMainTestRunner) {
+    window.addEventListener('load', () => {
+      console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
+      emitEvent('tests', ottrTests);
+    });
+  } else if (name === currentTestName) {
     console.log('ottr: waiting for window.onload event before running test...');
     window.addEventListener('load', () => {
       console.log('ottr: document loaded! running test');

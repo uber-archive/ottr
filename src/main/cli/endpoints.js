@@ -15,12 +15,19 @@ const sessions: SessionStore = {};
 const getTest = (sessionId, name): Test => {
   let session = sessions[sessionId];
   if (!session) {
-    session = sessions[sessionId] = {tests: {}};
+    session = sessions[sessionId] = {id: sessionId, tests: {}};
   }
   if (session.tests[name]) {
     return session.tests[name];
   }
-  return (session.tests[name] = {name, path: '?', done: false, error: false});
+  return (session.tests[name] = {
+    session: sessionId,
+    iteration: 0,
+    name,
+    path: '?',
+    done: false,
+    error: false
+  });
 };
 
 export const setupEndpointsBefore = (app: express$Application) => {
@@ -35,8 +42,10 @@ export const setupEndpointsBefore = (app: express$Application) => {
   });
 };
 
-const convertConsoleLogArgsToString = args =>
-  args.map(a => (a !== null && typeof a !== undefined && a.toString ? a.toString() : JSON.stringify(a))).join('');
+const toString = a =>
+  a !== null && typeof a !== undefined && a.toString ? a.toString() : JSON.stringify(a);
+
+const convertConsoleLogArgsToString = args => args.map(toString).join('');
 
 export const setupEndpointsAfter = (appServer: net$Server) => {
   const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
@@ -57,6 +66,9 @@ export const setupEndpointsAfter = (appServer: net$Server) => {
       }
       (console[logType] || console.log)(...args);
     });
+    client.on('tests', ([session, , tests]) =>
+      Object.keys(tests).map(name => Object.assign(getTest(session, name), tests[name]))
+    );
     client.on('done', ([session, test]) => (getTest(session, test).done = true));
     client.on('fail', ([session, test]) => {
       const t = getTest(session, test);

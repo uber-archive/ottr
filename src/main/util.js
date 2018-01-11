@@ -1,7 +1,8 @@
 // @flow
 
-import {currentTestSession} from './api/session';
 import type {Test} from './types';
+
+export const UI_BASE_URI = '/_ottr/ui';
 
 const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
 
@@ -10,12 +11,12 @@ const paramString = params =>
     .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k].toString())}`)
     .join('&');
 
-const addQueryParams = (path, params: {[string]: string | number | boolean}) =>
+export const addQueryParams = (path: string, params: {[string]: string | number | boolean}) =>
   `${path}${path.includes('?') ? '&' : '?'}${paramString(params)}`;
 
 export const getTestUrl = (test: Test) =>
   addQueryParams(`/${trimLeadingSlash(test.path)}`, {
-    'ottr-session': nonnull(currentTestSession),
+    'ottr-session': test.session,
     'ottr-test': test.name
   });
 
