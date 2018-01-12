@@ -11,7 +11,7 @@ import {getTestsInSession} from '../ui-util';
 import type {ContextRouter} from 'react-router-dom';
 import {addQueryParams} from '../../util';
 import {pollSession} from '../modules/runner';
-import {FontAwesomeButton} from "./controls";
+import {FontAwesomeButton} from './controls';
 
 const EMOJI_CHECK = '\u2705';
 const EMOJI_X = '\u274C';
@@ -69,7 +69,9 @@ class Tests extends React.Component<Props> {
             <div>running {running.length}</div>
             <div>failed {failed.length}</div>
             <div>queued {tests.length - done.length}</div>
-            <Link to="/repl" style={{color: 'black', textDecoration: 'none'}}><FontAwesomeButton name="pencil-square-o"/> New Test</Link>
+            <Link to="/repl" style={{color: 'black', textDecoration: 'none'}}>
+              <FontAwesomeButton name="pencil-square-o" /> New Test
+            </Link>
           </div>
         </div>
         {this.renderIframeToLoadTests()}

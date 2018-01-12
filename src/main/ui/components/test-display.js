@@ -11,11 +11,7 @@ import {connect} from 'react-redux';
 import {restart, stop} from '../modules/runner';
 import {getTestUrl} from '../../util';
 import {FontAwesomeButton} from "./controls";
-
-const red = 'red';
-const green = 'lightgreen';
-const blue = 'lightblue';
-const gray = 'lightgray';
+import {blue, gray, green, red} from "../ui-util";
 
 const colorFromTestProp = ({test}) =>
   test.error ? red : test.done ? green : test.running ? blue : gray;

@@ -20,6 +20,17 @@ export const getTestUrl = (test: Test) =>
     'ottr-test': test.name
   });
 
+export const once = <T: Function>(fn: T): T => {
+  let called = false;
+  // $FlowFixMe
+  return (...args) => {
+    if (!called) {
+      fn(...args);
+      called = true;
+    }
+  };
+};
+
 export function nonnull<T: Object | string | number | Array<any>>(value?: ?T): T {
   if (value === null || value === undefined) {
     throw new Error('value cannot be null');

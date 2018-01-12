@@ -29,6 +29,7 @@ import 'whatwg-fetch';
 import tapeTest from 'tape';
 import {currentTestName, currentTestSession, isMainTestRunner} from './session';
 import {done, emitEvent} from './socket';
+import {once} from '../util';
 
 if (currentTestSession) {
   if (isMainTestRunner) {
@@ -54,16 +55,16 @@ export function test(name: string, path: string, fn: (t: any) => any) {
   }
   ottrTests[name] = {name, path, fn};
   if (isMainTestRunner) {
-    window.addEventListener('load', () => {
+    window.addEventListener('load', once(() => {
       console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
       emitEvent('tests', ottrTests);
-    });
+    }));
   } else if (name === currentTestName) {
     console.log('ottr: waiting for window.onload event before running test...');
-    window.addEventListener('load', () => {
+    window.addEventListener('load', once(() => {
       console.log('ottr: document loaded! running test');
       tapeTest.onFinish(done);
       tapeTest(name, fn);
-    });
+    }));
   }
 }
