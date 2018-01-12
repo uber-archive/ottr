@@ -3,7 +3,7 @@
 import React from 'react';
 import {FontAwesomeButton} from './controls';
 import {green, red} from '../ui-util';
-import {Link} from "react-router-dom";
+import {Link} from 'react-router-dom';
 
 /* eslint-env browser */
 
@@ -53,8 +53,9 @@ export default class Repl extends React.Component<Props, State> {
     const contents = `import {test} from 'ottr';
 import $ from 'jquery';
 
-test('${this.state.uri} works properly', '${this.state.uri}', t => {
-${this.state.code.replace(/^|\n/g, '$0  ')}
+test('${this.state.uri} works properly', '${this.state.uri}', async t => {
+${this.state.code.replace(/^|\n/g, '$&  ')}
+t.end();
 });`;
     const sanitizedUri = this.state.uri.replace(/[^a-z0-9-_]/gi, '-').replace(/^-|-$/g, '');
     const filename = `ottr-${sanitizedUri || 'test'}.spec.js`.replace(/--+/g, '-');
@@ -66,7 +67,7 @@ ${this.state.code.replace(/^|\n/g, '$0  ')}
     const doc = win.document;
     const script = doc.createElement('script');
     const actualCode = `
-      test('new test', function(t) {
+      test('new test', async function(t) {
         ${this.state.code}
       });`;
     script.onload = () => {
@@ -92,15 +93,19 @@ ${this.state.code.replace(/^|\n/g, '$0  ')}
       <div style={{display: 'flex', height: '100%'}}>
         <div style={{width: 400, display: 'flex', flexDirection: 'column'}}>
           <div style={{display: 'flex'}}>
-            <Link to="/"><img src="images/ottr.jpg" width={100} /></Link>
+            <Link to="/">
+              <img src="images/ottr.jpg" width={100} />
+            </Link>
             <div>
               <h1 style={{marginTop: 0}}>ottr</h1>
-              <div><label>
-                URI: <input type="text" value={this.state.uri} onChange={this.updateUri} />
-              </label>
+              <div>
+                <label>
+                  URI: <input type="text" value={this.state.uri} onChange={this.updateUri} />
+                </label>
               </div>
               <FontAwesomeButton name="play" onClick={this.run} />
-              <FontAwesomeButton name="floppy-o" onClick={this.save} /></div>
+              <FontAwesomeButton name="floppy-o" onClick={this.save} />
+            </div>
           </div>
           <textarea
             value={this.state.code}

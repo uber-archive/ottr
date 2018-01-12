@@ -10,8 +10,8 @@ import type {Test} from '../../types';
 import {connect} from 'react-redux';
 import {restart, stop} from '../modules/runner';
 import {getTestUrl} from '../../util';
-import {FontAwesomeButton} from "./controls";
-import {blue, gray, green, red} from "../ui-util";
+import {FontAwesomeButton} from './controls';
+import {blue, gray, green, red} from '../ui-util';
 
 const colorFromTestProp = ({test}) =>
   test.error ? red : test.done ? green : test.running ? blue : gray;

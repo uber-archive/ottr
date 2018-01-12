@@ -13,7 +13,7 @@ const FontAwesomeWrapper = styled.a`
 `;
 
 export const FontAwesomeButton = (props: any) => (
-    <FontAwesomeWrapper href={props.href} target={props.target}>
-      <FontAwesome {...props} />
-    </FontAwesomeWrapper>
+  <FontAwesomeWrapper href={props.href} target={props.target}>
+    <FontAwesome {...props} />
+  </FontAwesomeWrapper>
 );

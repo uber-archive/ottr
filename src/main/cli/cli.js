@@ -64,6 +64,7 @@ async function start() {
     '/',
     proxy(shouldProxy, {
       target,
+      logLevel: 'warn',
       changeOrigin: true,
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
         const contentType = proxyRes.headers['content-type'];
@@ -84,7 +85,7 @@ async function start() {
   setupEndpointsBefore(app);
   const ottrPort = await getPort({port: 50505});
   let appServer = app.listen(ottrPort, () =>
-    console.log(`ottr running on http://localhost:${ottrPort} → ${target}`)
+    console.log(`ottr running on http://localhost:${ottrPort}/_ottr/ui`)
   );
   setupEndpointsAfter(appServer);
 }

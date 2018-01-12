@@ -55,16 +55,38 @@ export function test(name: string, path: string, fn: (t: any) => any) {
   }
   ottrTests[name] = {name, path, fn};
   if (isMainTestRunner) {
-    window.addEventListener('load', once(() => {
-      console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
-      emitEvent('tests', ottrTests);
-    }));
+    window.addEventListener(
+      'load',
+      once(() => {
+        console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
+        emitEvent('tests', ottrTests);
+      })
+    );
   } else if (name === currentTestName) {
     console.log('ottr: waiting for window.onload event before running test...');
-    window.addEventListener('load', once(() => {
-      console.log('ottr: document loaded! running test');
-      tapeTest.onFinish(done);
-      tapeTest(name, fn);
-    }));
+    window.addEventListener(
+      'load',
+      once(() => {
+        console.log('ottr: document loaded! running test');
+        tapeTest.onFinish(done);
+        tapeTest(name, fn);
+      })
+    );
   }
 }
+
+export function setValue(input: HTMLInputElement, value: string) {
+  const lastValue = input.value;
+  input.value = value;
+  const event = new Event('input', {bubbles: true});
+  // $FlowFixMe hack for React15
+  event.simulated = true;
+  // $FlowFixMe hack for React16
+  const tracker = input._valueTracker;
+  if (tracker) {
+    tracker.setValue(lastValue);
+  }
+  input.dispatchEvent(event);
+}
+
+export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));

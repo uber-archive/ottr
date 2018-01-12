@@ -2,7 +2,6 @@
 
 import type {Session, Test} from '../types';
 
-
 export const red = 'red';
 export const green = 'lightgreen';
 export const blue = 'lightblue';
