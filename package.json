@@ -44,6 +44,7 @@
     "http-proxy-middleware": "^0.17.4",
     "http-proxy-response-rewrite": "0.0.1",
     "immer": "^0.6.1",
+    "jquery": "^3.2.1",
     "node-fetch": "^1.7.3",
     "react": "^16.2.0",
     "react-document-title": "^2.0.3",

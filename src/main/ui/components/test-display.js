@@ -10,20 +10,7 @@ import type {Test} from '../../types';
 import {connect} from 'react-redux';
 import {restart, stop} from '../modules/runner';
 import {getTestUrl} from '../../util';
-
-const FontAwesomeWrapper = styled.a`
-  margin: 5px;
-  cursor: pointer;
-  display: inline-block;
-  vertical-align: middle;
-  color: inherit;
-`;
-
-const FontAwesomeButton = (props: any) => (
-  <FontAwesomeWrapper href={props.href} target={props.target}>
-    <FontAwesome {...props} />
-  </FontAwesomeWrapper>
-);
+import {FontAwesomeButton} from "./controls";
 
 const red = 'red';
 const green = 'lightgreen';

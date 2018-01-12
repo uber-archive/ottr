@@ -6,11 +6,12 @@ import type {ReduxStateType} from '../types';
 import DocumentTitle from 'react-document-title';
 import type {Test} from '../../types';
 import TestDisplay from './test-display';
-import {withRouter} from 'react-router-dom';
+import {Link, withRouter} from 'react-router-dom';
 import {getTestsInSession} from '../ui-util';
 import type {ContextRouter} from 'react-router-dom';
 import {addQueryParams} from '../../util';
 import {pollSession} from '../modules/runner';
+import {FontAwesomeButton} from "./controls";
 
 const EMOJI_CHECK = '\u2705';
 const EMOJI_X = '\u274C';
@@ -64,10 +65,11 @@ class Tests extends React.Component<Props> {
             <img src="images/ottr.jpg" width={100} />
           </div>
           <div>
-            <h1>ottr</h1>
+            <h1 style={{marginTop: 0}}>ottr</h1>
             <div>running {running.length}</div>
             <div>failed {failed.length}</div>
             <div>queued {tests.length - done.length}</div>
+            <Link to="/repl" style={{color: 'black', textDecoration: 'none'}}><FontAwesomeButton name="pencil-square-o"/> New Test</Link>
           </div>
         </div>
         {this.renderIframeToLoadTests()}
