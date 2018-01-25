@@ -94,7 +94,7 @@ t.end();
         <div style={{width: 400, display: 'flex', flexDirection: 'column'}}>
           <div style={{display: 'flex'}}>
             <Link to="/">
-              <img src="images/ottr.jpg" width={100} />
+              <img src="images/ottr.png" width={100} />
             </Link>
             <div>
               <h1 style={{marginTop: 0}}>ottr</h1>

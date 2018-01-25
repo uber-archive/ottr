@@ -62,7 +62,7 @@ class Tests extends React.Component<Props> {
         <DocumentTitle title={`ottr ${emojis}${progress}`} />
         <div style={{display: 'flex'}}>
           <div>
-            <img src="images/ottr.jpg" width={100} />
+            <img src="images/ottr.png" width={100} />
           </div>
           <div>
             <h1 style={{marginTop: 0}}>ottr</h1>
