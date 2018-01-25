@@ -1,39 +1,12 @@
 // @flow
 
 import io from 'socket.io';
-import type {Test} from '../types';
-
-type Session = {
-  tests: {[string]: Test}
-};
-type SessionStore = {
-  [string]: Session
-};
-
-const sessions: SessionStore = {};
-
-const getTest = (sessionId, name): Test => {
-  let session = sessions[sessionId];
-  if (!session) {
-    session = sessions[sessionId] = {id: sessionId, tests: {}};
-  }
-  if (session.tests[name]) {
-    return session.tests[name];
-  }
-  return (session.tests[name] = {
-    session: sessionId,
-    iteration: 0,
-    name,
-    path: '?',
-    done: false,
-    error: false
-  });
-};
+import {getOrCreateTest, sessions} from './sessions';
 
 export const setupEndpointsBefore = (app: express$Application) => {
   const prefix = '/_ottr/api';
   app.get(`${prefix}/session/:id`, (req: express$Request, res: express$Response) => {
-    const status = sessions[req.params.id];
+    const status = ((id: string) => sessions[id])(req.params.id);
     if (!status) {
       res.status(404).send('not found');
     } else {
@@ -53,7 +26,7 @@ export const setupEndpointsAfter = (appServer: net$Server) => {
   webSocketSession.on('connection', client => {
     client.on('console', ([session, testName, logType, ...args]) => {
       if (testName) {
-        const test = getTest(session, testName);
+        const test = getOrCreateTest(session, testName);
         const line = convertConsoleLogArgsToString(args);
         if (line.match(/^not ok/)) {
           test.error = true;
@@ -67,11 +40,11 @@ export const setupEndpointsAfter = (appServer: net$Server) => {
       (console[logType] || console.log)(...args);
     });
     client.on('tests', ([session, , tests]) =>
-      Object.keys(tests).map(name => Object.assign(getTest(session, name), tests[name]))
+      Object.keys(tests).map(name => Object.assign(getOrCreateTest(session, name), tests[name]))
     );
-    client.on('done', ([session, test]) => (getTest(session, test).done = true));
+    client.on('done', ([session, test]) => (getOrCreateTest(session, test).done = true));
     client.on('fail', ([session, test]) => {
-      const t = getTest(session, test);
+      const t = getOrCreateTest(session, test);
       t.error = true;
       t.done = true;
     });

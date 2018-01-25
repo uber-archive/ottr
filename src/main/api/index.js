@@ -63,11 +63,10 @@ export function test(name: string, path: string, fn: (t: any) => any) {
       })
     );
   } else if (name === currentTestName) {
-    console.log('ottr: waiting for window.onload event before running test...');
+    console.log('[ottr] waiting for window.onload event before running test...');
     window.addEventListener(
       'load',
       once(() => {
-        console.log('ottr: document loaded! running test');
         tapeTest.onFinish(done);
         tapeTest(name, fn);
       })

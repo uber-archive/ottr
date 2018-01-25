@@ -15,7 +15,7 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
           repl: path.resolve(__dirname, '../ui/repl-helper.js')
         },
         output: {path: folder, filename: '[name]-bundle.js'},
-        resolve: {alias: {fs: path.resolve(__dirname, 'noop.js')}}
+        resolve: {symlinks: false, alias: {fs: path.resolve(__dirname, 'noop.js')}}
       },
       (err, stats) => {
         const info = stats.toJson();
@@ -32,6 +32,7 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
           reject(err);
           return;
         }
+        console.log(`[ottr] packaged tests into ${folder}`);
         resolve(folder);
       }
     );

@@ -31,6 +31,18 @@ export const once = <T: Function>(fn: T): T => {
   };
 };
 
+export const logEachLine = (
+    prefix: ?string,
+  data: {toString: () => string},
+  fn: (...any) => any = console.log
+) =>
+  data
+    .toString()
+    // remove blank lines
+    .replace(/^\n+|\n+$/g, '')
+    .split('\n')
+    .forEach(line => fn(prefix ? `${prefix} ${line}` : line));
+
 export function nonnull<T: Object | string | number | Array<any>>(value?: ?T): T {
   if (value === null || value === undefined) {
     throw new Error('value cannot be null');

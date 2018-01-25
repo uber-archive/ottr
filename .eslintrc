@@ -11,9 +11,11 @@
     }
   },
   "rules": {
+    "quotes": [2,"single", {"allowTemplateLiterals": true}],
     "flowtype/define-flow-type": 1,
     "indent": 0,
     "strict": 0,
+    "no-return-assign": 0,
     "no-console": 0,
     "guard-for-in": 0,
     "operator-linebreak": 0,

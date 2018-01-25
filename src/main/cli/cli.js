@@ -37,20 +37,61 @@ import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
 import path from 'path';
 import {setupEndpointsAfter, setupEndpointsBefore} from './endpoints';
-import {UI_BASE_URI} from '../util';
+import {logEachLine, UI_BASE_URI} from '../util';
+import {argv} from 'yargs';
+import {runChrome} from './chrome';
+import {spawn} from 'child_process';
+import {createSession, getSessions, sessions} from './sessions';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
 const TESTS_PREFIX = '/_ottr/tests';
 
+const run = (title, cmd, options) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(cmd, [], options);
+    child.stdout.on('data', data => logEachLine(`[${title}]`, data));
+    child.stderr.on('data', data => logEachLine(`!${title}!`, data));
+    child.on('exit', code => (code === 0 ? resolve() : reject(code)));
+  });
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const exitWhenAllSessionsComplete = async () => {
+  while (true) {
+    const sess = getSessions();
+    //TODO: handle failed session with 0 tests
+    const tests = sess.reduce((result, s) => [...result, ...s.getTests()], []);
+    if (tests.length > 0 && tests.every(t => t.done)) {
+      const failed = tests.filter(t => t.error);
+      const sessionInfo = sess.length > 1 ? ` across ${sess.length} sessions` : '';
+      if (failed.length > 0) {
+        console.log(`[ottr] failed: ${failed.length} of ${tests.length}${sessionInfo}`);
+        process.exit(1);
+      } else {
+        console.log(`[ottr] success! ${tests.length} tests passed${sessionInfo}`);
+        process.exit(0);
+      }
+      return;
+    }
+    await sleep(100);
+  }
+};
+
 async function start() {
-  const testFileOrig = process.argv[3];
+  let [target, testFileOrig] = argv._;
+  //TODO: warn about incorrect args
   if (!testFileOrig || !fs.existsSync(testFileOrig)) {
     throw new Error('usage: ottr localhost:3000 src/test/index.js');
   }
 
+  if (argv.server) {
+    console.log(`[ottr] starting server ${argv.server}`);
+    run('ottr:server', argv.server, {shell: true});
+    //TODO: wait for server to be up. maybe request /health?
+  }
+
   await packageForBrowser(testFileOrig);
-  let target = process.argv[2];
   if (!target.includes('://')) target = `http://${target}`;
 
   const app = express();
@@ -60,6 +101,7 @@ async function start() {
   );
   app.use(TESTS_PREFIX, express.static('.'));
 
+  const ottrPort = await getPort({host: 'localhost', port: 50505});
   app.use(
     '/',
     proxy(shouldProxy, {
@@ -68,7 +110,9 @@ async function start() {
       changeOrigin: true,
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
         const contentType = proxyRes.headers['content-type'];
-        delete proxyRes.headers['content-security-policy'];
+        const hostAndPort: string = req.get('host') || `localhost:${ottrPort}`;
+        const csp = `default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://${hostAndPort}`;
+        proxyRes.headers['content-security-policy'] = csp;
         if (contentType && contentType.match(/.*text\/html.*/i)) {
           const originalLength = proxyRes.headers['content-length'];
           const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
@@ -76,21 +120,32 @@ async function start() {
             proxyRes.headers['content-length'] = +originalLength + scriptTag.length;
 
           modifyResponse(res, proxyRes.headers['content-encoding'], body =>
-            body.toString().replace(/(<head[^>]*>)/, '$1' + scriptTag)
+            body.toString().replace(/(<head[^>]*>)|$/, '$1' + scriptTag)
           );
         }
       }
     })
   );
   setupEndpointsBefore(app);
-  const ottrPort = await getPort({port: 50505});
-  let appServer = app.listen(ottrPort, () =>
-    console.log(`ottr running on http://localhost:${ottrPort}/_ottr/ui`)
+  const url = `http://localhost:${ottrPort}/_ottr/ui`;
+  const appServer = app.listen(ottrPort, 'localhost', () =>
+    console.log(`[ottr] running on ${url}`)
   );
   setupEndpointsAfter(appServer);
+
+  if (argv.chrome) {
+    const sessionUrl = `${url}/session/${createSession()}`;
+    console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
+    //TODO: only import puppeteer if user wants this feature
+    runChrome(sessionUrl);
+  }
+
+  if (!argv.debug) {
+    exitWhenAllSessionsComplete();
+  }
 }
 
 start().catch(e => {
-  console.error('ottr initialization failed', e);
+  console.error('[ottr] initialization failed', e);
   process.exit(1);
 });

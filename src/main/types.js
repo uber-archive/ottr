@@ -10,6 +10,7 @@ export type Test = {
   running?: boolean,
   done?: boolean,
   skipped?: boolean,
+  /** Whether the test failed or not */
   error?: boolean,
   output?: string
 };
