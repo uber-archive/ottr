@@ -40,5 +40,7 @@ if ! which xauth >/dev/null; then
     apt-get -y install xauth
 fi
 
+ldd node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome
+
 # Ensure that `npm` is executed with the specified node version
 n use $NODE_VERSION $(which npm) run jenkins
