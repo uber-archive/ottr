@@ -46,7 +46,7 @@ const setupNodeModules = dir => {
     try {
       fs.symlinkSync(`${repoRoot}/node_modules/${file}`, `${nodeModules}/${file}`);
     } catch (e) {
-      console.log(`error symlinking node_modules/${file} from ottr dependencies`);
+      console.log(`error symlinking node_modules/${file} from ottr dependencies`, e);
     }
   });
 };

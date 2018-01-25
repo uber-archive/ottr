@@ -23,9 +23,10 @@
   },
   "scripts": {
     "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* node_modules/font-awesome/{css,fonts} lib/static",
-    "build-test": "babel src -d dist-test --source-maps",
+    "build-test": "npm run build && babel src -d dist-test --source-maps",
     "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js; nyc report",
     "test": "npm run cover",
+    "jenkins": "npm run lint && npm run flow && npm run cover",
     "flow": "flow check",
     "check": "npm run prettier && npm run lint && npm run flow && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",

@@ -4,3 +4,4 @@
 /.idea
 /coverage
 /.nyc_output
+npm-debug.log

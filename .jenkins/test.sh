@@ -41,4 +41,4 @@ if ! which xauth >/dev/null; then
 fi
 
 # Ensure that `npm` is executed with the specified node version
-xvfb-run -a n use $NODE_VERSION $(which npm) test
+n use $NODE_VERSION $(which npm) run jenkins
