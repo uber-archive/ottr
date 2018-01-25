@@ -4,6 +4,9 @@
     "react",
     "stage-2",
     ["env", {
+      "test": {
+        "plugins": ["istanbul"]
+      },
       "targets": {
         "node": "current"
       }

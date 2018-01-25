@@ -24,7 +24,8 @@
   "scripts": {
     "build": "babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* node_modules/font-awesome/{css,fonts} lib/static",
     "build-test": "babel src -d dist-test --source-maps",
-    "test": "npm run build-test && node dist-test/test/index.spec.js",
+    "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js; nyc report",
+    "test": "npm run cover",
     "flow": "flow check",
     "check": "npm run prettier && npm run lint && npm run flow && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
@@ -71,6 +72,7 @@
   "devDependencies": {
     "babel-cli": "^6.24.1",
     "babel-eslint": "^6.1.2",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-plugin-syntax-flow": "^6.18.0",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-polyfill": "^6.23.0",
@@ -79,6 +81,7 @@
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
     "babel-preset-stage-3": "^6.24.1",
+    "cross-env": "^5.1.3",
     "eslint": "^3.19.0",
     "eslint-config-uber-es2015": "^3.1.1",
     "eslint-plugin-babel": "^4.1.1",
@@ -88,8 +91,17 @@
     "flow-bin": "^0.56.0",
     "flow-typed": "^2.2.0",
     "nodemon": "^1.14.7",
+    "nyc": "^11.4.1",
     "prettier": "^1.7.4",
     "tape-promise": "^2.0.1",
     "tmp": "0.0.33"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "lines": 80,
+    "reporter": [
+      "cobertura",
+      "html"
+    ]
   }
 }
