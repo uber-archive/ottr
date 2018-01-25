@@ -77,7 +77,7 @@ test('ottr tests pass - Chrome + server + imports', async t => {
   const port = await getPort({host: 'localhost'});
 
   let launched = false;
-  const server = startDummyServer(port, () => launched = true);
+  const server = startDummyServer(port, () => (launched = true));
 
   const {name: dir} = tmp.dirSync();
   setupNodeModules(dir);

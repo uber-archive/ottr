@@ -32,7 +32,7 @@ export const once = <T: Function>(fn: T): T => {
 };
 
 export const logEachLine = (
-    prefix: ?string,
+  prefix: ?string,
   data: {toString: () => string},
   fn: (...any) => any = console.log
 ) =>

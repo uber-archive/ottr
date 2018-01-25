@@ -31,7 +31,9 @@
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
     "lint": "eslint src",
     "unpm-prepublish": "echo 'no pre-publish script yet'",
-    "watch": "nodemon --ext js,html --exec 'npm run build' --watch src"
+    "watch": "nodemon --ext js,html --exec 'npm run build' --watch src",
+    "prettier-amend-commit": "npm run prettier && git add -u && git commit --amend --no-edit",
+    "pre-arc-diff": "npm run prettier-amend-commit && npm run lint && npm run flow"
   },
   "engines": {
     "node": ">=6.10",
