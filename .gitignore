@@ -4,4 +4,5 @@
 /.idea
 /coverage
 /.nyc_output
+/.local-chromium
 npm-debug.log
