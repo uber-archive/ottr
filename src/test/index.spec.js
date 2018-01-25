@@ -28,3 +28,4 @@ import 'source-map-support/register';
 import 'babel-polyfill';
 
 // no tests yet
+import './cli/index.spec.js';
