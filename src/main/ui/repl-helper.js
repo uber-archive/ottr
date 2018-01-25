@@ -1,7 +1,7 @@
 /* eslint-env browser */
 
 import test from 'tape';
-import $ from 'jQuery';
+import $ from 'jquery';
 import {setValue, sleep} from '../api';
 window.$ = $;
 window.jQuery = $;

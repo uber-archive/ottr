@@ -58,6 +58,11 @@ const run = (title, cmd, options) =>
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+const handleFatalError = e => {
+  console.error('[ottr] initialization failed', e);
+  process.exit(1);
+};
+
 const exitWhenAllSessionsComplete = async () => {
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -87,7 +92,7 @@ async function start() {
 
   if (argv.server) {
     console.log(`[ottr] starting server ${argv.server}`);
-    run('ottr:server', argv.server, {shell: true});
+    run('ottr:server', argv.server, {shell: true}).catch(handleFatalError);
     // TODO: wait for server to be up. maybe request /health?
   }
 
@@ -138,15 +143,12 @@ async function start() {
     const sessionUrl = `${url}/session/${createSession()}`;
     console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
     // TODO: only import puppeteer if user wants this feature
-    runChrome(sessionUrl, !argv.inspect);
+    runChrome(sessionUrl, !argv.inspect).catch(handleFatalError);
   }
 
   if (!argv.debug) {
-    exitWhenAllSessionsComplete();
+    exitWhenAllSessionsComplete().catch(handleFatalError);
   }
 }
 
-start().catch(e => {
-  console.error('[ottr] initialization failed', e);
-  process.exit(1);
-});
+start().catch(handleFatalError);

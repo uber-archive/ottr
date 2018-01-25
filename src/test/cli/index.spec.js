@@ -23,93 +23,86 @@
  */
 
 import test from 'tape-promise/tape';
-import {spawn} from 'child_process';
-import getPort from 'get-port';
-import tmp from 'tmp';
-import fs from 'fs';
-import path from 'path';
-import express from 'express';
-import {logEachLine} from '../../main/util';
+import {runOttr, startDummyServer} from './util';
 
-const ottrRepoRoot = () => path.resolve(__dirname, '../../..');
-
-const setupNodeModules = dir => {
-  const nodeModules = `${dir}/node_modules`;
-  fs.mkdirSync(nodeModules);
-  const bin = `${nodeModules}/.bin`;
-  fs.mkdirSync(bin);
-  const repoRoot = ottrRepoRoot();
-  fs.symlinkSync(repoRoot, `${nodeModules}/ottr`);
-  fs.symlinkSync(`${repoRoot}/lib/cli/cli.js`, `${bin}/ottr`);
-  const ottrNpmDependencyNames = fs.readdirSync(`${repoRoot}/node_modules`);
-  ottrNpmDependencyNames.forEach(file => {
-    try {
-      fs.symlinkSync(`${repoRoot}/node_modules/${file}`, `${nodeModules}/${file}`);
-    } catch (e) {
-      console.log(`error symlinking node_modules/${file} from ottr dependencies`, e);
-    }
-  });
-};
-
-const startDummyServer = (port, launchedCallback) => {
-  const app = express();
-  app.get('/home', (req, res) => {
-    console.log(`[dummy] server got request for ${req.url}`);
-    res.send('<script>window.ottrServerWorks = true</script>');
-  });
-  app.get('/confirm-server-launched', (req, res) => {
-    launchedCallback();
-    res.send('fake server launched!');
-  });
-  console.log(`[dummy] server running on port ${port}`);
-  return app.listen(port);
-};
-
-const run = (cmd, options) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(cmd, options);
-    child.stdout.on('data', data => logEachLine('[ottr-cli]', data));
-    child.stderr.on('data', data => logEachLine('!ottr-cli!', data));
-    child.on('exit', code => (code === 0 ? resolve() : reject(code)));
-  });
+// TODO: test puppeteer failure
+// TODO: test timeout
+// TODO: test failure when no tests defined
+// TODO: test failure when runtime error in test startup
 
 test('ottr tests pass - Chrome + server + imports', async t => {
-  const port = await getPort({host: 'localhost'});
-
   let launched = false;
-  const server = startDummyServer(port, () => (launched = true));
+  const server = await startDummyServer(() => (launched = true));
+  const port = server.address().port;
+  await runOttr(`--chrome --server ./server.sh localhost:${port} test.js`, {
+    'dep.js': `module.exports = function() { console.log('Dep loaded') }`,
+    'test.js': `
+        var dep = require('./dep'); 
+        var ottr = require('ottr');
+        ottr.test('homepage works', '/home', function(t) {
+          t.equal(window.location.pathname, '/home');
+          t.true(window.ottrServerWorks);
+          t.end();
+        });`,
+    'server.sh': `
+        #!/bin/sh
+        curl -s http://localhost:${port}/confirm-server-launched`
+  });
+  t.true(launched, 'ottr should launch the web server');
+  server.close();
+});
 
-  const {name: dir} = tmp.dirSync();
-  setupNodeModules(dir);
-  const testJs = `${dir}/index.js`;
-  fs.writeFileSync(`${dir}/dep.js`, `module.exports = function() { console.log('Dep loaded') }`);
-  fs.writeFileSync(
-    testJs,
-    `
-    var dep = require('./dep'); 
-    var ottr = require('ottr');
-    ottr.test('homepage works', '/home', function(t) {
-      t.equal(window.location.pathname, '/home');
-      t.true(window.ottrServerWorks);
-      t.end();
+test('ottr fails when webpack sees missing dependency', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`localhost:${port} test.js`, {
+      'test.js': `
+        var dep = require('./dep'); 
+        var ottr = require('ottr');
+        ottr.test('this is gonna fail', '/home', function(t) {
+          t.end();
+        });
+    `,
+      'server.sh': `
+        #!/bin/sh
+        curl -s http://localhost:${port}/confirm-server-launched`
     });
-    `
-  );
-  const serverSh = `${dir}/server.sh`;
-  fs.writeFileSync(
-    serverSh,
-    `
-    #!/bin/sh
-    
-    curl -s http://localhost:${port}/confirm-server-launched
-  `,
-    {mode: 0o700}
-  );
-  console.log(`Set up Node project in ${dir}`);
-  const ottrBin = 'node_modules/.bin/ottr';
-  const cmd = `${ottrBin} --chrome --server ${serverSh} localhost:${port} ${testJs}`;
-  console.log(`Running ${cmd}`);
-  await run(cmd, {shell: true, cwd: dir});
-  t.true(launched);
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(1, e, 'ottr should fail');
+  }
+  server.close();
+});
+
+test("ottr fails when webpack can't parse test code", async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`localhost:${port} test.js`, {
+      'test.js': `this is just not valid javascript code`
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(1, e, 'ottr should fail');
+  }
+  server.close();
+});
+
+test('ottr fails when server fails', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`--server server.sh localhost:${port} test.js`, {
+      'test.js': `
+        require('ottr').test('homepage works', '/home', function(t) { t.end(); });`,
+      'server.sh': `
+        #!/bin/sh
+        exit 1`
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(1, e, 'ottr should fail');
+  }
   server.close();
 });
