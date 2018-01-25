@@ -23,6 +23,7 @@
  * SOFTWARE.
  */
 
+/* eslint-disable no-process-exit,node/shebang */
 // @flow
 
 import 'source-map-support/register';
@@ -41,7 +42,7 @@ import {logEachLine, UI_BASE_URI} from '../util';
 import {argv} from 'yargs';
 import {runChrome} from './chrome';
 import {spawn} from 'child_process';
-import {createSession, getSessions, sessions} from './sessions';
+import {createSession, getSessions} from './sessions';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -58,29 +59,28 @@ const run = (title, cmd, options) =>
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const exitWhenAllSessionsComplete = async () => {
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const sess = getSessions();
-    //TODO: handle failed session with 0 tests
+    // TODO: handle failed session with 0 tests
     const tests = sess.reduce((result, s) => [...result, ...s.getTests()], []);
     if (tests.length > 0 && tests.every(t => t.done)) {
       const failed = tests.filter(t => t.error);
       const sessionInfo = sess.length > 1 ? ` across ${sess.length} sessions` : '';
       if (failed.length > 0) {
         console.log(`[ottr] failed: ${failed.length} of ${tests.length}${sessionInfo}`);
-        process.exit(1);
-      } else {
-        console.log(`[ottr] success! ${tests.length} tests passed${sessionInfo}`);
-        process.exit(0);
+        return process.exit(1);
       }
-      return;
+      console.log(`[ottr] success! ${tests.length} tests passed${sessionInfo}`);
+      return process.exit(0);
     }
     await sleep(100);
   }
 };
 
 async function start() {
-  let [target, testFileOrig] = argv._;
-  //TODO: warn about incorrect args
+  const [targetOrig, testFileOrig] = argv._;
+  // TODO: warn about incorrect args
   if (!testFileOrig || !fs.existsSync(testFileOrig)) {
     throw new Error('usage: ottr localhost:3000 src/test/index.js');
   }
@@ -88,11 +88,11 @@ async function start() {
   if (argv.server) {
     console.log(`[ottr] starting server ${argv.server}`);
     run('ottr:server', argv.server, {shell: true});
-    //TODO: wait for server to be up. maybe request /health?
+    // TODO: wait for server to be up. maybe request /health?
   }
 
   await packageForBrowser(testFileOrig);
-  if (!target.includes('://')) target = `http://${target}`;
+  const target = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
 
   const app = express();
   app.use(UI_BASE_URI, express.static(path.resolve(__dirname, '../static')));
@@ -116,11 +116,12 @@ async function start() {
         if (contentType && contentType.match(/.*text\/html.*/i)) {
           const originalLength = proxyRes.headers['content-length'];
           const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
-          if (originalLength)
-            proxyRes.headers['content-length'] = +originalLength + scriptTag.length;
+          if (originalLength) {
+            proxyRes.headers['content-length'] = Number(originalLength) + scriptTag.length;
+          }
 
           modifyResponse(res, proxyRes.headers['content-encoding'], body =>
-            body.toString().replace(/(<head[^>]*>)|$/, '$1' + scriptTag)
+            body.toString().replace(/(<head[^>]*>)|$/, `$1${scriptTag}`)
           );
         }
       }
@@ -136,7 +137,7 @@ async function start() {
   if (argv.chrome) {
     const sessionUrl = `${url}/session/${createSession()}`;
     console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
-    //TODO: only import puppeteer if user wants this feature
+    // TODO: only import puppeteer if user wants this feature
     runChrome(sessionUrl, !argv.inspect);
   }
 
