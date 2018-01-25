@@ -3,6 +3,7 @@ coverage/
 dist-test/
 .nyc_output/
 flow-typed/
+.n/
 src/
 .jenkins/
 .uber/
