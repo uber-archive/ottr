@@ -137,7 +137,7 @@ async function start() {
     const sessionUrl = `${url}/session/${createSession()}`;
     console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
     //TODO: only import puppeteer if user wants this feature
-    runChrome(sessionUrl);
+    runChrome(sessionUrl, !argv.inspect);
   }
 
   if (!argv.debug) {

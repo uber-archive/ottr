@@ -1,0 +1,11 @@
+{
+  "unpm": {
+    "publish": true,
+    "hipchat": [
+      "uE2E"
+    ],
+    "script": [
+      "./.jenkins/unpm-publish.sh"
+    ]
+  }
+}

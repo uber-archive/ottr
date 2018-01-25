@@ -1,14 +1,14 @@
 {
-  "name": "ottr",
+  "name": "@uber/ottr",
   "version": "0.1.0",
-  "description": "Run end-to-end tests",
-  "homepage": "https://github.com/uber-node/ottr",
+  "description": "Run end-to-end tests in a web browser",
+  "homepage": "https://code.uberinternal.com/diffusion/WEOTTOC/",
   "bugs": {
-    "url": "https://github.com/uber-node/ottr/issues"
+    "url": "https://code.uberinternal.com/diffusion/WEOTTOC/"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/uber-node/ottr.git"
+    "url": "gitolite@code.uber.internal:web/ottr"
   },
   "keywords": [
     "testing",
@@ -29,6 +29,7 @@
     "check": "npm run prettier && npm run lint && npm run flow && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
     "lint": "eslint src",
+    "unpm-prepublish": "echo 'no pre-publish script yet'",
     "watch": "nodemon --ext js,html --exec 'npm run build' --watch src"
   },
   "engines": {
