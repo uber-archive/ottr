@@ -4,6 +4,10 @@ set -ex
 
 export DEBIAN_FRONTEND=noninteractive
 
+apt-get install -y -q --force-yes google-chrome-stable
+
+google-chrome --headless https://www.chromestatus.com
+
 # Specify Node.JS version here
 export NODE_VERSION=6.6.0
 
