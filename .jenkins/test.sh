@@ -38,6 +38,6 @@ DOCKER_TAG=tag-$BUILD_TAG
 DOCKER_ID=i-$BUILD_TAG
 
 docker build -t $DOCKER_TAG .jenkins/chrome-docker
-docker run --name=$DOCKER_ID $DOCKER_TAG ./tests-docker.sh
+docker run --name=$DOCKER_ID $DOCKER_TAG /bin/bash tests-docker.sh
 docker cp $DOCKER_ID:artifacts artifacts
 
