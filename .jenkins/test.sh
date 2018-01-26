@@ -6,7 +6,10 @@ export DEBIAN_FRONTEND=noninteractive
 
 docker build -t debian-with-chrome .jenkins/chrome-docker
 
-docker run debian-with-chrome chromium --headless https://www.chromestatus.com
+docker run debian-with-chrome chromium --headless --disable-gpu --screenshot https://time.is/
+
+mkdir -p artifacts
+mv screenshot.png artifacts
 
 # Specify Node.JS version here
 export NODE_VERSION=6.6.0
