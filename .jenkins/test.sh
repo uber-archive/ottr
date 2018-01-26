@@ -37,7 +37,7 @@ cp -r $(find . -maxdepth 1 -not -name .jenkins -and -not -name .git | sort) .jen
 DOCKER_TAG=tag-$BUILD_TAG
 DOCKER_ID=i-$BUILD_TAG
 
-docker build -t $DOCKER_TAG .jenkins/chrome-docker
-docker run --name=$DOCKER_ID $DOCKER_TAG /bin/bash tests-docker.sh
+docker build -t $DOCKER_TAG .jenkins/chrome-docker/ottr
+docker run --name=$DOCKER_ID $DOCKER_TAG /bin/bash ottr/tests-docker.sh
 docker cp $DOCKER_ID:artifacts artifacts
 
