@@ -4,16 +4,6 @@ set -ex
 
 export DEBIAN_FRONTEND=noninteractive
 
-DOCKER_TAG=tag-$BUILD_TAG
-DOCKER_ID=i-$BUILD_TAG
-
-docker build -t $DOCKER_TAG .jenkins/chrome-docker
-docker run --name=$DOCKER_ID $DOCKER_TAG chromium --headless --disable-gpu --screenshot https://time.is/
-
-mkdir -p artifacts
-docker cp $DOCKER_ID:screenshot.png artifacts
-exit 1
-
 # Specify Node.JS version here
 export NODE_VERSION=6.6.0
 
@@ -42,15 +32,12 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 unpm install --development
 
-# Install xauth if it's not available on this jenkins host
-# TODO: actually put xauth in the AMI for jenkins jessie hosts
-if ! which xauth >/dev/null; then
-  sudo -E \
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    apt-get -y install xauth
-fi
+cp -r . .jenkins/chrome-docker
 
-ldd node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome
+DOCKER_TAG=tag-$BUILD_TAG
+DOCKER_ID=i-$BUILD_TAG
 
-# Ensure that `npm` is executed with the specified node version
-n use $NODE_VERSION $(which npm) run jenkins
+docker build -t $DOCKER_TAG .jenkins/chrome-docker
+docker run --name=$DOCKER_ID $DOCKER_TAG ./tests-docker.sh
+docker cp $DOCKER_ID:artifacts artifacts
+
