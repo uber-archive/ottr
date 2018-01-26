@@ -4,9 +4,9 @@ set -ex
 
 export DEBIAN_FRONTEND=noninteractive
 
-lsb_release -a
+docker build -t debian-with-chrome .jenkins/chrome-docker
 
-google-chrome --headless https://www.chromestatus.com
+docker run debian-with-chrome chromium-browser --headless https://www.chromestatus.com
 
 # Specify Node.JS version here
 export NODE_VERSION=6.6.0
