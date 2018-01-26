@@ -32,7 +32,7 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 unpm install --development
 
-cp -r . .jenkins/chrome-docker
+cp -r $(find . -maxdepth 1 -not -name .jenkins) .jenkins/chrome-docker
 
 DOCKER_TAG=tag-$BUILD_TAG
 DOCKER_ID=i-$BUILD_TAG
