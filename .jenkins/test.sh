@@ -4,9 +4,6 @@ set -ex
 
 export DEBIAN_FRONTEND=noninteractive
 
-sudo -E \
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    apt-get install -y -q --force-yes google-chrome-stable
 lsb_release -a
 
 google-chrome --headless https://www.chromestatus.com
