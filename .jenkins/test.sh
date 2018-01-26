@@ -32,12 +32,10 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 unpm install --development
 
-cp -r $(find . -maxdepth 1 -not -name .jenkins -and -not -name .git | sort) .jenkins/chrome-docker/ottr || true
-
 DOCKER_TAG=tag-$BUILD_TAG
 DOCKER_ID=i-$BUILD_TAG
 
-docker build -t $DOCKER_TAG .jenkins/chrome-docker
-docker run --name=$DOCKER_ID $DOCKER_TAG ottr/tests-docker.sh
+docker build -t $DOCKER_TAG -f .jenkins/chrome-docker/Dockerfile .
+docker run --name=$DOCKER_ID $DOCKER_TAG /bin/ls -lh
 docker cp $DOCKER_ID:artifacts artifacts
 
