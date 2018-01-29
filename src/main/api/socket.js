@@ -25,7 +25,7 @@ export const emitEvent = (name: string, ...args: mixed[]) => {
 
 export const done = () => emitEvent('done');
 
-export const fail = () => emitEvent('fail');
+export const fail = (reason: ?string) => emitEvent('fail', reason);
 
 if (currentTestSession) {
   console.log('setting up console proxy');
@@ -48,8 +48,8 @@ if (currentTestSession) {
 
   const handleError = e => {
     console.error(e);
-    fail();
+    fail((e && e.message) || JSON.stringify(e));
   };
   window.addEventListener('error', handleError);
-  window.addEventListener('unhandledrejection', event => handleError);
+  window.addEventListener('unhandledrejection', handleError);
 }

@@ -37,8 +37,9 @@ import {logEachLine} from '../util';
 import commander from 'commander';
 import {runChrome} from './chrome';
 import {spawn} from 'child_process';
-import {createSession, getSessions} from './server/sessions';
-import {startOttrServer} from "./server";
+import {createSession, DEFAULT_ERROR, getSessions} from './server/sessions';
+import {startOttrServer} from './server';
+import type {Session} from '../types';
 
 const run = (title, cmd, options) =>
   new Promise((resolve, reject) => {
@@ -55,21 +56,31 @@ function handleFatalError(e) {
   process.exit(1);
 }
 
+function printSessionSummary(s) {
+  const tests = s.getTests();
+  if (s.error) {
+    const failed = tests.filter(t => t.error);
+    if (failed.length > 0) {
+      console.error(`[ottr] failed: ${failed.length} of ${tests.length}`);
+    }
+    if (s.error !== DEFAULT_ERROR) {
+      console.error(`[ottr] failed: ${s.error || 'unknown error'}`);
+    }
+  } else {
+    console.log(`[ottr] success! ${tests.length} tests passed`);
+  }
+}
+
 async function exitWhenAllSessionsComplete() {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const sess = getSessions();
-    // TODO: handle failed session with 0 tests
-    const tests = sess.reduce((result, s) => [...result, ...s.getTests()], []);
-    if (tests.length > 0 && tests.every(t => t.done)) {
-      const failed = tests.filter(t => t.error);
-      const sessionInfo = sess.length > 1 ? ` across ${sess.length} sessions` : '';
-      if (failed.length > 0) {
-        console.log(`[ottr] failed: ${failed.length} of ${tests.length}${sessionInfo}`);
-        return process.exit(1);
+    if (sess.length > 0 && sess.every(s => s.done)) {
+      // eslint-disable-next-line no-loop-func
+      for (const s of sess) {
+        printSessionSummary(s);
       }
-      console.log(`[ottr] success! ${tests.length} tests passed${sessionInfo}`);
-      return process.exit(0);
+      return process.exit(sess.some(s => s.error) ? 1 : 0);
     }
     await sleep(100);
   }

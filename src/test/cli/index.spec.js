@@ -75,6 +75,21 @@ test('fails when webpack sees missing dependency', async t => {
   server.close();
 });
 
+test('fails when test code init fails', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`--chrome localhost:${port} test.js`, {
+      'test.js': `window.thisdefinitelywontwork()`
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(1, e, 'ottr should fail');
+  }
+  server.close();
+  t.end();
+});
+
 test("fails when webpack can't parse test code", async t => {
   const server = await startDummyServer();
   const port = server.address().port;

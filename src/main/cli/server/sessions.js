@@ -26,15 +26,35 @@
 
 import type {Test} from '../../types';
 
+export const DEFAULT_ERROR = 'tests failed';
+
 class Session {
   id: string;
   tests: {[string]: Test} = {};
+  error: ?string;
+  done: boolean = false;
 
   constructor(id: string) {
     this.id = id;
   }
 
   getTests = () => Object.keys(this.tests).map(name => this.tests[name]);
+
+  update() {
+    const tests = this.getTests();
+    if (!this.error || !this.done) {
+      if (!this.error) {
+        const failedTests = tests.filter(t => t.error).length;
+        if (failedTests) {
+          this.error = DEFAULT_ERROR;
+        }
+      }
+      if (!this.done && tests.length) {
+        this.done = tests.every(t => t.done);
+      }
+    }
+    return this;
+  }
 }
 
 type SessionStore = {
@@ -43,7 +63,7 @@ type SessionStore = {
 
 export const sessions: SessionStore = {};
 
-export const getSessions = (): Session[] => Object.keys(sessions).map(id => sessions[id]);
+export const getSessions = (): Session[] => Object.keys(sessions).map(id => sessions[id].update());
 
 export const createSession = () => {
   let id = Math.round(Math.random() * 1000);
@@ -54,7 +74,7 @@ export const createSession = () => {
 };
 export const getOrCreateSession = (id: string) => {
   if (sessions[id]) {
-    return sessions[id];
+    return sessions[id].update();
   }
   return (sessions[id] = new Session(id));
 };
@@ -69,7 +89,6 @@ export const getOrCreateTest = (sessionId: string, name: string): Test => {
     iteration: 0,
     name,
     path: '?',
-    done: false,
-    error: false
+    done: false
   });
 };

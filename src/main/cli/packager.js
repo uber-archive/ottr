@@ -11,6 +11,7 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
         devtool: 'inline-source-map',
         entry: {
           tests: path.resolve(jsEntryPointPath),
+          run: path.resolve(__dirname, '../ui/run-helper.js'),
           ottr: path.resolve(__dirname, '../ui/index.js'),
           repl: path.resolve(__dirname, '../ui/repl-helper.js')
         },

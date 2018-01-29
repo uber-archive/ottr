@@ -10,13 +10,14 @@ export type Test = {
   running?: boolean,
   done?: boolean,
   skipped?: boolean,
-  /** Whether the test failed or not */
-  error?: boolean,
+  error?: string,
   output?: string
 };
 
 export type Session = {
   +id: string,
   +names: string[],
-  +tests: {[name: string]: Test}
+  +tests: {[name: string]: Test},
+  +done?: boolean,
+  +error: ?string
 };

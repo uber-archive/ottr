@@ -25,7 +25,7 @@
 // @flow
 
 import io from 'socket.io';
-import {getOrCreateTest, sessions} from './sessions';
+import {getOrCreateSession, getOrCreateTest, sessions} from './sessions';
 
 export const setupEndpoints = (app: express$Application) =>
   app.get(`${'/_ottr/api'}/session/:id`, (req: express$Request, res: express$Response) => {
@@ -51,7 +51,7 @@ export function setupWebSockets(appServer: net$Server) {
         const test = getOrCreateTest(session, testName);
         const line = convertConsoleLogArgsToString(args);
         if (line.match(/^not ok/)) {
-          test.error = true;
+          test.error = line;
         }
         if (!test.output) {
           test.output = line;
@@ -65,10 +65,16 @@ export function setupWebSockets(appServer: net$Server) {
       Object.keys(tests).map(name => Object.assign(getOrCreateTest(session, name), tests[name]))
     );
     client.on('done', ([session, test]) => (getOrCreateTest(session, test).done = true));
-    client.on('fail', ([session, test]) => {
-      const t = getOrCreateTest(session, test);
-      t.error = true;
-      t.done = true;
+    client.on('fail', ([session, test, reason]) => {
+      if (test) {
+        const t = getOrCreateTest(session, test);
+        t.error = reason || 'unknown error';
+        t.done = true;
+      } else {
+        const s = getOrCreateSession(session);
+        s.error = reason || 'unknown error';
+        s.done = true;
+      }
     });
   });
 }

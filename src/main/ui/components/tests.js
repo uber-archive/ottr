@@ -4,10 +4,10 @@ import React from 'react';
 import {connect} from 'react-redux';
 import type {ReduxStateType} from '../types';
 import DocumentTitle from 'react-document-title';
-import type {Test} from '../../types';
+import type {Session, Test} from '../../types';
 import TestDisplay from './test-display';
 import {Link, withRouter} from 'react-router-dom';
-import {getTestsInSession} from '../ui-util';
+import {getTestsInSession, red} from '../ui-util';
 import type {ContextRouter} from 'react-router-dom';
 import {addQueryParams} from '../../util';
 import {pollSession} from '../modules/runner';
@@ -16,7 +16,7 @@ import {FontAwesomeButton} from './controls';
 const EMOJI_CHECK = '\u2705';
 const EMOJI_X = '\u274C';
 
-type Props = {pollSession: string => any, sessionId: string, tests: Test[]};
+type Props = {pollSession: string => any, sessionId: string, session: Session, tests: Test[]};
 
 type OwnProps = ContextRouter;
 
@@ -47,7 +47,7 @@ class Tests extends React.Component<Props> {
   );
 
   render() {
-    const {tests} = this.props;
+    const {session, tests} = this.props;
     const running = tests.filter(t => t.running);
     const failed = tests.filter(t => t.error);
     const done = tests.filter(t => t.done);
@@ -69,6 +69,8 @@ class Tests extends React.Component<Props> {
             <div>running {running.length}</div>
             <div>failed {failed.length}</div>
             <div>queued {tests.length - done.length}</div>
+            {session &&
+              session.error && <div style={{background: red, color: 'white'}}>{session.error}</div>}
             <Link to="/repl" style={{color: 'black', textDecoration: 'none'}}>
               <FontAwesomeButton name="pencil-square-o" /> New Test
             </Link>
@@ -85,6 +87,7 @@ class Tests extends React.Component<Props> {
 
 const mapStateToProps = ({runner: {sessions}}: ReduxStateType, {match: {params}}: OwnProps) => ({
   sessionId: params.id,
+  session: (params.id && sessions[params.id]) || undefined,
   tests: params.id && sessions[params.id] ? getTestsInSession(sessions[params.id]) : []
 });
 
