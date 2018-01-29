@@ -24,7 +24,7 @@
 
 // @flow
 
-import type {Test} from '../types';
+import type {Test} from '../../types';
 
 class Session {
   id: string;

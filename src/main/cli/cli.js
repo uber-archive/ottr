@@ -30,23 +30,15 @@ import 'source-map-support/register';
 
 import 'babel-polyfill';
 
-import getPort from 'get-port';
-import express from 'express';
-import proxy from 'http-proxy-middleware';
 import fs from 'fs';
-import modifyResponse from 'http-proxy-response-rewrite';
 import {packageForBrowser} from './packager';
 import path from 'path';
-import {setupEndpointsAfter, setupEndpointsBefore} from './endpoints';
-import {logEachLine, UI_BASE_URI} from '../util';
+import {logEachLine} from '../util';
 import commander from 'commander';
 import {runChrome} from './chrome';
 import {spawn} from 'child_process';
-import {createSession, getSessions} from './sessions';
-
-const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
-
-const TESTS_PREFIX = '/_ottr/tests';
+import {createSession, getSessions} from './server/sessions';
+import {startOttrServer} from "./server";
 
 const run = (title, cmd, options) =>
   new Promise((resolve, reject) => {
@@ -81,49 +73,6 @@ async function exitWhenAllSessionsComplete() {
     }
     await sleep(100);
   }
-}
-
-async function startOttrServer(target) {
-  const app = express();
-  app.use(UI_BASE_URI, express.static(path.resolve(__dirname, '../static')));
-  app.use(`${UI_BASE_URI}/*`, (req: express$Request, res: express$Response) =>
-    res.sendFile(path.resolve(__dirname, '../static/index.html'))
-  );
-  app.use(TESTS_PREFIX, express.static('.'));
-
-  const ottrPort = await getPort({host: 'localhost', port: 50505});
-  app.use(
-    '/',
-    proxy(shouldProxy, {
-      target,
-      logLevel: 'warn',
-      changeOrigin: true,
-      onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
-        const contentType = proxyRes.headers['content-type'];
-        const hostAndPort: string = req.get('host') || `localhost:${ottrPort}`;
-        const csp = `default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://${hostAndPort}`;
-        proxyRes.headers['content-security-policy'] = csp;
-        if (contentType && contentType.match(/.*text\/html.*/i)) {
-          const originalLength = proxyRes.headers['content-length'];
-          const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
-          if (originalLength) {
-            proxyRes.headers['content-length'] = Number(originalLength) + scriptTag.length;
-          }
-
-          modifyResponse(res, proxyRes.headers['content-encoding'], body =>
-            body.toString().replace(/(<head[^>]*>)|$/, `$1${scriptTag}`)
-          );
-        }
-      }
-    })
-  );
-  setupEndpointsBefore(app);
-  const url = `http://localhost:${ottrPort}/_ottr/ui`;
-  const appServer = app.listen(ottrPort, 'localhost', () =>
-    console.log(`[ottr] running on ${url}`)
-  );
-  setupEndpointsAfter(appServer);
-  return url;
 }
 
 async function start(command) {

@@ -1,11 +1,34 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2017 Uber Node.js
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 // @flow
 
 import io from 'socket.io';
 import {getOrCreateTest, sessions} from './sessions';
 
-export const setupEndpointsBefore = (app: express$Application) => {
-  const prefix = '/_ottr/api';
-  app.get(`${prefix}/session/:id`, (req: express$Request, res: express$Response) => {
+export const setupEndpoints = (app: express$Application) =>
+  app.get(`${'/_ottr/api'}/session/:id`, (req: express$Request, res: express$Response) => {
     const status = ((id: string) => sessions[id])(req.params.id);
     if (!status) {
       res.status(404).send('not found');
@@ -13,14 +36,13 @@ export const setupEndpointsBefore = (app: express$Application) => {
       res.json(status);
     }
   });
-};
 
 const toString = a =>
   a !== null && typeof a !== undefined && a.toString ? a.toString() : JSON.stringify(a);
 
 const convertConsoleLogArgsToString = args => args.map(toString).join('');
 
-export const setupEndpointsAfter = (appServer: net$Server) => {
+export function setupWebSockets(appServer: net$Server) {
   const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
 
   webSocketSession.on('connection', client => {
@@ -49,4 +71,4 @@ export const setupEndpointsAfter = (appServer: net$Server) => {
       t.done = true;
     });
   });
-};
+}
