@@ -25,7 +25,6 @@
 import test from 'tape-promise/tape';
 import {runOttr, startDummyServer} from './util';
 
-// TODO: test puppeteer failure
 // TODO: test timeout
 
 test('success - Chrome + server + imports', async t => {
@@ -48,6 +47,7 @@ test('success - Chrome + server + imports', async t => {
   });
   t.true(launched, 'ottr should launch the web server');
   server.close();
+  t.end();
 });
 
 test('fails when webpack sees missing dependency', async t => {
@@ -71,6 +71,7 @@ test('fails when webpack sees missing dependency', async t => {
     t.equal(e, 1, 'ottr should fail');
   }
   server.close();
+  t.end();
 });
 
 test('fails when test code init fails', async t => {
@@ -85,6 +86,7 @@ test('fails when test code init fails', async t => {
     t.equal(e, 1, 'ottr should fail');
   }
   server.close();
+  t.end();
 });
 
 test('fails when no tests', async t => {
@@ -99,6 +101,22 @@ test('fails when no tests', async t => {
     t.equal(e, 1, 'ottr should fail');
   }
   server.close();
+  t.end();
+});
+
+test('fails when puppeteer fails', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`--chromium fake-chrome localhost:${port} test.js`, {
+      'test.js': `console.log('no tests here!')`
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(e, 1, 'ottr should fail');
+  }
+  server.close();
+  t.end();
 });
 
 test("fails when webpack can't parse test code", async t => {
@@ -113,6 +131,7 @@ test("fails when webpack can't parse test code", async t => {
     t.equal(e, 1, 'ottr should fail');
   }
   server.close();
+  t.end();
 });
 
 test('fails when server startup fails', async t => {
@@ -131,4 +150,5 @@ test('fails when server startup fails', async t => {
     t.equal(e, 1, 'ottr should fail');
   }
   server.close();
+  t.end();
 });

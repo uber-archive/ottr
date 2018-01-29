@@ -107,11 +107,11 @@ async function start(command) {
   const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
   const url = await startOttrServer(targetUrl);
 
-  if (command.chrome) {
+  if (command.chrome || command.chromium) {
     const sessionUrl = `${url}/session/${createSession()}`;
     console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
     // TODO: only import puppeteer if user wants this feature
-    runChrome(sessionUrl, !command.inspect).catch(handleFatalError);
+    runChrome(sessionUrl, !command.inspect, command.chromium).catch(handleFatalError);
   }
 
   if (!command.debug) {
@@ -126,6 +126,7 @@ const args = commander
   )
   .arguments('<url> <file>')
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
+  .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')
   .option('-i, --inspect', 'runs Chrome in GUI mode so you can watch tests run interactively')
   .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
