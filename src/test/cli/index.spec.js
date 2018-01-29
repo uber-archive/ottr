@@ -30,7 +30,7 @@ import {runOttr, startDummyServer} from './util';
 // TODO: test failure when no tests defined
 // TODO: test failure when runtime error in test startup
 
-test('ottr tests pass - Chrome + server + imports', async t => {
+test('success - Chrome + server + imports', async t => {
   let launched = false;
   const server = await startDummyServer(() => (launched = true));
   const port = server.address().port;
@@ -52,7 +52,7 @@ test('ottr tests pass - Chrome + server + imports', async t => {
   server.close();
 });
 
-test('ottr fails when webpack sees missing dependency', async t => {
+test('fails when webpack sees missing dependency', async t => {
   const server = await startDummyServer();
   const port = server.address().port;
   try {
@@ -75,7 +75,7 @@ test('ottr fails when webpack sees missing dependency', async t => {
   server.close();
 });
 
-test("ottr fails when webpack can't parse test code", async t => {
+test("fails when webpack can't parse test code", async t => {
   const server = await startDummyServer();
   const port = server.address().port;
   try {
@@ -89,7 +89,7 @@ test("ottr fails when webpack can't parse test code", async t => {
   server.close();
 });
 
-test('ottr fails when server fails', async t => {
+test('fails when server startup fails', async t => {
   const server = await startDummyServer();
   const port = server.address().port;
   try {

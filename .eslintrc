@@ -13,6 +13,7 @@
   "rules": {
     "quotes": 0,
     "flowtype/define-flow-type": 1,
+    "no-trailing-spaces": 0,
     "indent": 0,
     "strict": 0,
     "no-return-assign": 0,

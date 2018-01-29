@@ -44,6 +44,7 @@
   "dependencies": {
     "babel-polyfill": "^6.26.0",
     "body-parser": "^1.18.2",
+    "commander": "^2.13.0",
     "express": "^4.16.2",
     "font-awesome": "^4.7.0",
     "get-port": "^3.2.0",
@@ -70,8 +71,7 @@
     "styled-components": "^2.4.0",
     "tape": "^4.6.3",
     "webpack": "^3.10.0",
-    "whatwg-fetch": "^2.0.3",
-    "yargs": "^8.0.2"
+    "whatwg-fetch": "^2.0.3"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",

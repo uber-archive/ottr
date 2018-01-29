@@ -39,7 +39,7 @@ import {packageForBrowser} from './packager';
 import path from 'path';
 import {setupEndpointsAfter, setupEndpointsBefore} from './endpoints';
 import {logEachLine, UI_BASE_URI} from '../util';
-import {argv} from 'yargs';
+import commander from 'commander';
 import {runChrome} from './chrome';
 import {spawn} from 'child_process';
 import {createSession, getSessions} from './sessions';
@@ -58,12 +58,12 @@ const run = (title, cmd, options) =>
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const handleFatalError = e => {
+function handleFatalError(e) {
   console.error('[ottr] initialization failed', e);
   process.exit(1);
-};
+}
 
-const exitWhenAllSessionsComplete = async () => {
+async function exitWhenAllSessionsComplete() {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const sess = getSessions();
@@ -81,24 +81,9 @@ const exitWhenAllSessionsComplete = async () => {
     }
     await sleep(100);
   }
-};
+}
 
-async function start() {
-  const [targetOrig, testFileOrig] = argv._;
-  // TODO: warn about incorrect args
-  if (!testFileOrig || !fs.existsSync(testFileOrig)) {
-    throw new Error('usage: ottr localhost:3000 src/test/index.js');
-  }
-
-  if (argv.server) {
-    console.log(`[ottr] starting server ${argv.server}`);
-    run('ottr:server', argv.server, {shell: true}).catch(handleFatalError);
-    // TODO: wait for server to be up. maybe request /health?
-  }
-
-  await packageForBrowser(testFileOrig);
-  const target = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
-
+async function startOttrServer(target) {
   const app = express();
   app.use(UI_BASE_URI, express.static(path.resolve(__dirname, '../static')));
   app.use(`${UI_BASE_URI}/*`, (req: express$Request, res: express$Response) =>
@@ -138,17 +123,60 @@ async function start() {
     console.log(`[ottr] running on ${url}`)
   );
   setupEndpointsAfter(appServer);
+  return url;
+}
 
-  if (argv.chrome) {
+async function start(command) {
+  const [targetOrig, testFileOrig] = command.args;
+  if (!testFileOrig || !fs.existsSync(testFileOrig)) {
+    if (testFileOrig) {
+      console.error(`ERROR: ${path.resolve(testFileOrig)} does not exist`);
+    }
+    command.help();
+    return;
+  }
+
+  if (command.server) {
+    console.log(`[ottr] starting server ${command.server}`);
+    run('ottr:server', command.server, {shell: true}).catch(handleFatalError);
+    // TODO: wait for server to be up. maybe request /health?
+  }
+
+  await packageForBrowser(testFileOrig);
+
+  const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
+  const url = await startOttrServer(targetUrl);
+
+  if (command.chrome) {
     const sessionUrl = `${url}/session/${createSession()}`;
     console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
     // TODO: only import puppeteer if user wants this feature
-    runChrome(sessionUrl, !argv.inspect).catch(handleFatalError);
+    runChrome(sessionUrl, !command.inspect).catch(handleFatalError);
   }
 
-  if (!argv.debug) {
+  if (!command.debug) {
     exitWhenAllSessionsComplete().catch(handleFatalError);
   }
 }
 
-start().catch(handleFatalError);
+const args = commander
+  .description(
+    `  url:  the website to run your tests against
+    file: root end-to-end test file that runs all your tests`
+  )
+  .arguments('<url> <file>')
+  .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
+  .option('-d, --debug', 'keep ottr running indefinitely after tests finish')
+  .option('-i, --inspect', 'runs Chrome in GUI mode so you can watch tests run interactively')
+  .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
+  .on('--help', () => {
+    console.log('');
+    console.log('  Examples:');
+    console.log('');
+    console.log('    $ ottr --chrome --debug localhost:9999 src/test/e2e.js');
+    console.log('    $ ottr https://google.com dist-test/e2e.js');
+    console.log('');
+  })
+  .parse(process.argv);
+
+start(args).catch(handleFatalError);

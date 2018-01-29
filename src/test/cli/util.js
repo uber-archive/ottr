@@ -88,6 +88,6 @@ export const runOttr = (args: string, files: {[string]: string}) => {
   });
   const ottrBin = 'node_modules/.bin/ottr';
   const cmd = `${ottrBin} ${args}`;
-  console.log(`Running ${cmd}`);
+  console.log(`Running from ${dir} - ${cmd}`);
   return run(cmd, {shell: true, cwd: dir});
 };
