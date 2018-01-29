@@ -27,8 +27,6 @@ import {runOttr, startDummyServer} from './util';
 
 // TODO: test puppeteer failure
 // TODO: test timeout
-// TODO: test failure when no tests defined
-// TODO: test failure when runtime error in test startup
 
 test('success - Chrome + server + imports', async t => {
   let launched = false;
@@ -70,7 +68,7 @@ test('fails when webpack sees missing dependency', async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(1, e, 'ottr should fail');
+    t.equal(e, 1, 'ottr should fail');
   }
   server.close();
 });
@@ -84,10 +82,23 @@ test('fails when test code init fails', async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(1, e, 'ottr should fail');
+    t.equal(e, 1, 'ottr should fail');
   }
   server.close();
-  t.end();
+});
+
+test('fails when no tests', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`--chrome localhost:${port} test.js`, {
+      'test.js': `console.log('no tests here!')`
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(e, 1, 'ottr should fail');
+  }
+  server.close();
 });
 
 test("fails when webpack can't parse test code", async t => {
@@ -99,7 +110,7 @@ test("fails when webpack can't parse test code", async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(1, e, 'ottr should fail');
+    t.equal(e, 1, 'ottr should fail');
   }
   server.close();
 });
@@ -117,7 +128,7 @@ test('fails when server startup fails', async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(1, e, 'ottr should fail');
+    t.equal(e, 1, 'ottr should fail');
   }
   server.close();
 });

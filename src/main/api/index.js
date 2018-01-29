@@ -31,6 +31,15 @@ import {currentTestName, currentTestSession, isMainTestRunner} from './session';
 import {done, emitEvent} from './socket';
 import {once} from '../util';
 
+const ottrTests = {};
+
+const submitTestsToServer = once(() => {
+  console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
+  emitEvent('tests', ottrTests);
+});
+
+window.ottrTestInitFinished = submitTestsToServer;
+
 if (currentTestSession) {
   if (isMainTestRunner) {
     console.log(`ottr[${currentTestSession}]: preparing to run tests`);
@@ -40,8 +49,6 @@ if (currentTestSession) {
 } else {
   console.log('ottr: this frame is not for running anything!');
 }
-
-const ottrTests = {};
 
 export function test(name: string, path: string, fn: (t: any) => any) {
   if (!name) {

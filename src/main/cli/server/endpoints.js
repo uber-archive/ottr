@@ -61,9 +61,17 @@ export function setupWebSockets(appServer: net$Server) {
       }
       (console[logType] || console.log)(...args);
     });
-    client.on('tests', ([session, , tests]) =>
-      Object.keys(tests).map(name => Object.assign(getOrCreateTest(session, name), tests[name]))
-    );
+    client.on('tests', ([session, , tests]) => {
+      console.log('got tests')
+      Object.keys(tests).map(name =>
+        Object.assign(getOrCreateTest(session, name), tests[name])
+      );
+      const sess = getOrCreateSession(session);
+      if (sess.getTests().length === 0) {
+        sess.error = 'no tests found in test file - your tests must `import {test} from \'ottr\'`';
+        sess.update();
+      }
+    });
     client.on('done', ([session, test]) => (getOrCreateTest(session, test).done = true));
     client.on('fail', ([session, test, reason]) => {
       if (test) {

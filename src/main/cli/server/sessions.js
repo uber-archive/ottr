@@ -53,6 +53,9 @@ class Session {
         this.done = tests.every(t => t.done);
       }
     }
+    if (this.error) {
+      this.done = true;
+    }
     return this;
   }
 }
