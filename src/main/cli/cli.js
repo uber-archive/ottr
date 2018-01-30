@@ -23,7 +23,7 @@
  * SOFTWARE.
  */
 
-/* eslint-disable no-process-exit,node/shebang */
+/* eslint-disable no-process-exit,node/shebang,no-unreachable */
 // @flow
 
 import 'source-map-support/register';
@@ -35,11 +35,10 @@ import {packageForBrowser} from './packager';
 import path from 'path';
 import {logEachLine} from '../util';
 import commander from 'commander';
-import {runChrome} from './chrome';
+import {ChromeRunner, runChrome} from './chrome';
 import {spawn} from 'child_process';
 import {createSession, DEFAULT_ERROR, getSessions} from './server/sessions';
 import {startOttrServer} from './server';
-import type {Session} from '../types';
 
 const run = (title, cmd, options) =>
   new Promise((resolve, reject) => {
@@ -51,72 +50,119 @@ const run = (title, cmd, options) =>
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-function handleFatalError(e) {
-  console.error('[ottr] initialization failed', e);
-  process.exit(1);
-}
+class Ottr {
+  command;
+  chrome: ChromeRunner;
 
-function printSessionSummary(s) {
-  const tests = s.getTests();
-  if (s.error) {
-    const failed = tests.filter(t => t.error);
-    if (failed.length > 0) {
-      console.error(`[ottr] failed: ${failed.length} of ${tests.length}`);
-    }
-    if (s.error !== DEFAULT_ERROR) {
-      console.error(`[ottr] failed: ${s.error || 'unknown error'}`);
-    }
-  } else {
-    console.log(`[ottr] success! ${tests.length} tests passed`);
+  constructor(command) {
+    this.command = command;
   }
-}
 
-async function exitWhenAllSessionsComplete() {
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const sess = getSessions();
-    if (sess.length > 0 && sess.every(s => s.done)) {
-      // eslint-disable-next-line no-loop-func
-      for (const s of sess) {
-        printSessionSummary(s);
+  run() {
+    this.runReally().catch(this.exit);
+  }
+
+  validate() {
+    const [, testFileOrig] = this.command.args;
+    if (!testFileOrig || !fs.existsSync(testFileOrig)) {
+      if (testFileOrig) {
+        return this.exit(`${path.resolve(testFileOrig)} does not exist`, true);
       }
-      return process.exit(sess.some(s => s.error) ? 1 : 0);
+      return this.exit(1, true);
     }
-    await sleep(100);
-  }
-}
 
-async function start(command) {
-  const [targetOrig, testFileOrig] = command.args;
-  if (!testFileOrig || !fs.existsSync(testFileOrig)) {
-    if (testFileOrig) {
-      console.error(`ERROR: ${path.resolve(testFileOrig)} does not exist`);
+    if (!runChrome && this.command.coverage) {
+      return this.exit('you passed --coverage without also passing --chrome/chromium', true);
     }
-    command.help();
-    return;
+
+    if (this.command.coverage && this.command.coverage !== 'chrome') {
+      return this.exit(`unknown value --coverage=${this.command.coverage}`, true);
+    }
+
+    if (this.command.coverage === 'chrome' && !global.__coverage__) {
+      return this.exit('you passed --coverage but ottr does not appear to be running in nyc/istanbul (missing global.__coverage__)', true);
+    }
+    return true;
   }
 
-  if (command.server) {
-    console.log(`[ottr] starting server ${command.server}`);
-    run('ottr:server', command.server, {shell: true}).catch(handleFatalError);
-    // TODO: wait for server to be up. maybe request /health?
+  async runReally() {
+    if (!this.validate()) {
+      return;
+    }
+
+    const [targetOrig, testFileOrig] = this.command.args;
+    if (this.command.server) {
+      console.log(`[ottr] starting server ${this.command.server}`);
+      run('ottr:server', this.command.server, {shell: true}).catch(this.exit);
+      // TODO: wait for server to be up. maybe request /health?
+    }
+
+    await packageForBrowser(testFileOrig);
+
+    const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
+    const url = await startOttrServer(targetUrl);
+
+    const useChrome = this.command.chrome || this.command.chromium;
+    if (useChrome) {
+      const sessionUrl = `${url}/session/${createSession()}`;
+      console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
+      // TODO: only import puppeteer if user wants this feature
+      this.chrome = new ChromeRunner(sessionUrl, !this.command.inspect, this.command.chromium);
+    }
+
+    if (!this.command.debug) {
+      this.exitWhenAllSessionsComplete().catch(this.exit);
+    }
   }
 
-  await packageForBrowser(testFileOrig);
-
-  const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
-  const url = await startOttrServer(targetUrl);
-
-  if (command.chrome || command.chromium) {
-    const sessionUrl = `${url}/session/${createSession()}`;
-    console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
-    // TODO: only import puppeteer if user wants this feature
-    runChrome(sessionUrl, !command.inspect, command.chromium).catch(handleFatalError);
+  async exitWhenAllSessionsComplete() {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const sess = getSessions();
+      if (sess.length > 0 && sess.every(s => s.done)) {
+        sess.forEach(this.printSessionSummary);
+        this.exit(sess.some(s => s.error) ? 1 : 0);
+        return;
+      }
+      await sleep(100);
+    }
   }
 
-  if (!command.debug) {
-    exitWhenAllSessionsComplete().catch(handleFatalError);
-  }
+  exit = async (codeOrError, printHelp?) => {
+    let code;
+    if (typeof codeOrError === 'number') {
+      code = codeOrError;
+    } else {
+      console.error('[ottr] initialization failed', codeOrError);
+      code = 1;
+    }
+    if (this.chrome) {
+      try {
+        await this.chrome.finish();
+      } catch (e) {
+        console.error('error shutting down Chrome', e);
+      }
+    }
+    if (printHelp) {
+      this.command.help();
+    }
+    process.exit(code);
+  };
+
+  printSessionSummary = s => {
+    const tests = s.getTests();
+    if (s.error) {
+      const failed = tests.filter(t => t.error);
+      if (failed.length > 0) {
+        console.error(`[ottr] failed: ${failed.length} of ${tests.length}`);
+      }
+      if (s.error !== DEFAULT_ERROR) {
+        console.error(`[ottr] failed: ${s.error || 'unknown error'}`);
+      }
+    } else {
+      console.log(`[ottr] success! ${tests.length} tests passed`);
+    }
+  };
 }
 
 const args = commander
@@ -125,19 +171,34 @@ const args = commander
     file: root end-to-end test file that runs all your tests`
   )
   .arguments('<url> <file>')
+  .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
+  .option(
+    '--coverage <type>',
+    "use 'chrome' for code coverage from Chrome DevTools (see below)",
+    s => s.split(',')
+  )
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')
   .option('-i, --inspect', 'runs Chrome in GUI mode so you can watch tests run interactively')
-  .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
-  .on('--help', () => {
-    console.log('');
-    console.log('  Examples:');
-    console.log('');
-    console.log('    $ ottr --chrome --debug localhost:9999 src/test/e2e.js');
-    console.log('    $ ottr https://google.com dist-test/e2e.js');
-    console.log('');
-  })
+  .on('--help', () =>
+    console.log(`
+  Examples:
+
+    $ ottr --chrome --debug localhost:9999 src/test/e2e.js
+
+        Runs your tests in e2e.js against your local development server using
+        a headless Chrome browser. The --debug option leaves ottr running so
+        you can debug interactively using the browser of your choice. (Your
+        server must already be running on port 9999.)
+
+    $ nyc --reporter=html ottr --coverage=chrome https://google.com dist-test/e2e.js
+
+        Runs your tests against Google's home page, in a Chrome headless 
+        browser, with Chrome's built-in code coverage recording. nyc (the 
+        istanbul command-line tool) generates an HTML coverage report.
+`)
+  )
   .parse(process.argv);
 
-start(args).catch(handleFatalError);
+new Ottr(args).run();

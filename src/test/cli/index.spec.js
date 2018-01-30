@@ -147,7 +147,7 @@ test('fails when server startup fails', async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(e, 1, 'ottr should fail');
+    t.equal(e, 127, 'ottr should fail');
   }
   server.close();
   t.end();
