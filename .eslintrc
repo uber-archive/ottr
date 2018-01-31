@@ -29,6 +29,7 @@
     "react/prop-types": 0,
     "space-before-function-paren": 0,
     "node/no-unsupported-features": 0,
-    "complexity": 0
+    "complexity": 0,
+    "sort-vars": 0
   }
 }

@@ -28,6 +28,7 @@ import puppeteer from 'puppeteer';
 import {logEachLine} from '../../util';
 import libCoverage from 'istanbul-lib-coverage';
 import {chromeCoverageToIstanbulJson} from "./coverage";
+import NYC from 'nyc';
 
 export class ChromeRunner {
   startupCompletePromise: Promise<*>;
@@ -56,10 +57,16 @@ export class ChromeRunner {
       console.log('capturing coverage from Chrome');
       const page = await this.startupCompletePromise;
       const chromeCoverage = await page.coverage.stopJSCoverage();
-      const istanbulCoverage = chromeCoverageToIstanbulJson(chromeCoverage);
+      const istanbulCoverage = await chromeCoverageToIstanbulJson(chromeCoverage);
       const map = libCoverage.createCoverageMap(global.__coverage__);
       map.merge(istanbulCoverage);
       global.__coverage__ = map.toJSON();
+      console.log('before creating nyc', Object.keys(global.__coverage__))
+      const nyc = new NYC();
+      console.log(nyc.config);
+      console.log('after creating nyc', Object.keys(global.__coverage__))
+      nyc.writeCoverageFile();
+      console.log('after writing nyc', Object.keys(global.__coverage__))
     }
     await this.browser.close();
   }

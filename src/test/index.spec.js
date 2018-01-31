@@ -29,3 +29,4 @@ import 'babel-polyfill';
 
 // no tests yet
 import './cli/index.spec.js';
+import './cli/chrome/index.spec.js';

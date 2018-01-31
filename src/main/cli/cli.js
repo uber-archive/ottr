@@ -78,10 +78,6 @@ class Ottr {
     if (this.command.coverage && this.command.coverage !== 'chrome') {
       return this.exit(`unknown value --coverage=${this.command.coverage}`, true);
     }
-
-    if (this.command.coverage === 'chrome' && !global.__coverage__) {
-      return this.exit('you passed --coverage but ottr does not appear to be running in nyc/istanbul (missing global.__coverage__)', true);
-    }
     return true;
   }
 
@@ -107,7 +103,12 @@ class Ottr {
       const sessionUrl = `${url}/session/${createSession()}`;
       console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
       // TODO: only import puppeteer if user wants this feature
-      this.chrome = new ChromeRunner(sessionUrl, !this.command.inspect, this.command.chromium);
+      this.chrome = new ChromeRunner(
+        sessionUrl,
+        !this.command.inspect,
+        this.command.coverage === 'chrome',
+        this.command.chromium
+      );
     }
 
     if (!this.command.debug) {
@@ -121,8 +122,7 @@ class Ottr {
       const sess = getSessions();
       if (sess.length > 0 && sess.every(s => s.done)) {
         sess.forEach(this.printSessionSummary);
-        this.exit(sess.some(s => s.error) ? 1 : 0);
-        return;
+        return this.exit(sess.some(s => s.error) ? 1 : 0);
       }
       await sleep(100);
     }
@@ -174,11 +174,7 @@ const args = commander
   .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
-  .option(
-    '--coverage <type>',
-    "use 'chrome' for code coverage from Chrome DevTools (see below)",
-    s => s.split(',')
-  )
+  .option('--coverage <type>', "use 'chrome' for code coverage from Chrome DevTools (see below)")
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')
   .option('-i, --inspect', 'runs Chrome in GUI mode so you can watch tests run interactively')
   .on('--help', () =>

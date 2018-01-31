@@ -29,7 +29,7 @@ import {runOttr, startDummyServer} from './util';
 
 test('success - Chrome + server + imports', async t => {
   let launched = false;
-  const server = await startDummyServer(() => (launched = true));
+  const server = await startDummyServer('', () => (launched = true));
   const port = server.address().port;
   await runOttr(`--chrome --server ./server.sh localhost:${port} test.js`, {
     'dep.js': `module.exports = function() { console.log('Dep loaded') }`,

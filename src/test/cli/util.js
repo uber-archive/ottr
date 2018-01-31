@@ -32,35 +32,61 @@ import {spawn} from 'child_process';
 import tmp from 'tmp';
 import mkdirp from 'mkdirp';
 import getPort from 'get-port';
+import {transform} from 'babel-core';
 
 const ottrRepoRoot = () => path.resolve(__dirname, '../../..');
 
 const setupNodeModules = dir => {
   const nodeModules = `${dir}/node_modules`;
   fs.mkdirSync(nodeModules);
-  const bin = `${nodeModules}/.bin`;
-  fs.mkdirSync(bin);
   const repoRoot = ottrRepoRoot();
   fs.symlinkSync(repoRoot, `${nodeModules}/ottr`, 'dir');
-  fs.symlinkSync(`${repoRoot}/lib/cli/cli.js`, `${bin}/ottr`, 'dir');
   const ottrNpmDependencyNames = fs.readdirSync(`${repoRoot}/node_modules`);
   ottrNpmDependencyNames.forEach(file => {
     try {
-      if (file !== '.bin') {
-        fs.symlinkSync(`${repoRoot}/node_modules/${file}`, `${nodeModules}/${file}`, 'dir');
-      }
+      fs.symlinkSync(`${repoRoot}/node_modules/${file}`, `${nodeModules}/${file}`, 'dir');
     } catch (e) {
       console.log(`could not symlink node_modules/${file} from ottr dependencies`, e);
     }
   });
+  const ottrBin = `${nodeModules}/.bin/ottr`;
+  try {
+    fs.unlinkSync(ottrBin);
+  } catch (e) {
+    /* not a problem */
+  }
+  fs.symlinkSync(`${repoRoot}/lib/cli/cli.js`, ottrBin, 'dir');
 };
 
-export const startDummyServer = async (launchedCallback: () => any = () => {}) => {
+const noop = () => {};
+
+const FRONTEND_JS = `
+  const covered = () => {
+    window.ottrServerWorks = true;
+  }
+  const uncovered = ()=>  {
+    console.log('never called');
+  }
+  covered();`;
+
+export const startDummyServer = async (dir: string = '', launchedCallback: () => any = noop) => {
   const port = await getPort();
   const app = express();
   app.get('/home', (req: express$Request, res: express$Response) => {
     console.log(`[dummy] server got request for ${req.url}`);
-    res.send('<script>window.ottrServerWorks = true</script>');
+    res.send('<script src=frontend.js></script>');
+  });
+  const instrumentedFrontendCode = transform(FRONTEND_JS, {
+    filename: `${dir}/src/gui/frontend.js`,
+    sourceFileName: `${dir}/src/gui/frontend.js`,
+    sourceMaps: 'inline',
+    sourceRoot: dir
+  }).code;
+  console.log(instrumentedFrontendCode)
+  app.get('/frontend.js', (req: express$Request, res: express$Response) => {
+    console.log(`[dummy] server got request for ${req.url}`);
+    res.set('Content-Type', 'text/javascript');
+    res.send(instrumentedFrontendCode);
   });
   app.get('/confirm-server-launched', (req: express$Request, res: express$Response) => {
     launchedCallback();
@@ -78,8 +104,18 @@ const run = (cmd, options) =>
     child.on('exit', code => (code === 0 ? resolve() : reject(code)));
   }): Promise<void>);
 
-export const runOttr = (args: string, files: {[string]: string}) => {
-  const {name: dir} = tmp.dirSync();
+export const runOttr = async (
+  cmdline: string | string[],
+  files: {[string]: string},
+  dir?: string = tmp.dirSync().name
+) => {
+  let prefix = '';
+  let args;
+  if (typeof cmdline === 'string') {
+    args = cmdline;
+  } else {
+    [prefix, args] = cmdline;
+  }
   setupNodeModules(dir);
   Object.keys(files).forEach(p => {
     const abs = path.resolve(dir, p);
@@ -87,7 +123,10 @@ export const runOttr = (args: string, files: {[string]: string}) => {
     fs.writeFileSync(abs, files[p], p.match(/\.sh$/) ? {mode: 0o700} : {});
   });
   const ottrBin = 'node_modules/.bin/ottr';
-  const cmd = `${ottrBin} ${args}`;
+  const cmd = `${prefix} ${ottrBin} ${args}`.trim();
   console.log(`Running from ${dir} - ${cmd}`);
-  return run(cmd, {shell: true, cwd: dir});
+  return {
+    dir,
+    promise: await run(cmd, {shell: true, cwd: dir})
+  };
 };
