@@ -29,7 +29,6 @@ import path from 'path';
 import test from 'tape-promise/tape';
 import {chromeCoverageToIstanbulJson} from '../../../main/cli/chrome/coverage';
 
-// TODO: test across 3 files
 // TODO: test start is before any file
 // TODO: test end is after any file
 
@@ -40,13 +39,10 @@ const toRange = ([line, column]) => ({line, column});
 function expectCovered(t, istCoverage, relpath, ...ranges: Array<[Loc, Loc]>) {
   const abspath = path.resolve(relpath);
   const cov = istCoverage[abspath];
-  t.ok(
-    cov,
-    `expected coverage info for ${abspath} (got ${Object.keys(istCoverage).join(', ')})`
-  );
+  t.ok(cov, `expected coverage info for ${abspath} (got ${Object.keys(istCoverage).join(', ')})`);
   t.equal(Object.keys(cov.statementMap).length, ranges.length, `number of covered ranges`);
   ranges.forEach((expectedRange, i) => {
-    const prefix = `[${relpath}]`
+    const prefix = `[${relpath}]`;
     const id = `${i}`;
     const r = cov.statementMap[id];
     t.ok(r, `${prefix} range[${i}] found in source map`);
@@ -70,7 +66,7 @@ test('inline source mapping conversion works (within single file)', async t => {
       text: code
     }
   ]);
-  expectCovered(t, istCoverage, 'fixtures/simple.js', [[9, 0], [11, 1]]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [12, 1]]);
   t.end();
 });
 
@@ -89,8 +85,31 @@ test('inline source mapping conversion works (spans across 2 files)', async t =>
     }
   ]);
   // Second half of simple.js
-  expectCovered(t, istCoverage, 'fixtures/simple.js', [[9, 0], [13, 19]]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
   // First half of dep.js
   expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [5, 12]]);
+  t.end();
+});
+
+test('inline source mapping conversion works (spans across 3 files)', async t => {
+  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const istCoverage = await chromeCoverageToIstanbulJson([
+    {
+      url: 'http://localhost:58947/javascript/simple-bundle.js',
+      ranges: [
+        {
+          start: code.indexOf('function definitelyCalled'),
+          end: code.indexOf('function anotherDependency')
+        }
+      ],
+      text: code
+    }
+  ]);
+  // Second half of simple.js
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
+  // all of dep.js
+  expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [12, 2]]);
+  // First half of dep2.js
+  expectCovered(t, istCoverage, 'fixtures/dep2.js', [[1, 0], [3, 6]]);
   t.end();
 });

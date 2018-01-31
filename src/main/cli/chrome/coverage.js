@@ -29,7 +29,7 @@ import url from 'url';
 import fs from 'fs';
 import {resolveSourceMap} from 'source-map-resolve';
 import promisify from 'util.promisify';
-import {PreciseSourceMapper} from './source-mapper';
+import {DEBUG, PreciseSourceMapper} from './source-mapper';
 
 type Range = {|
   start: number,
@@ -102,7 +102,9 @@ function getSourceMappedOffsets(f, sourceMap, tracker) {
     ? offset => {
         const chromeLineCol = tracker.get(offset);
         const originalLineCol = sourceMap.originalPositionFor(chromeLineCol);
-        console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
+        if (DEBUG) {
+          console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
+        }
         return originalLineCol;
       }
     : offset => tracker.get(offset);
@@ -127,6 +129,11 @@ function getSourceMappedOffsets(f, sourceMap, tracker) {
             sourceMap.eofForSource(start.source)
           );
           push(fixWebpackPath(end.source), {line: 1, column: 0}, end);
+          sourceMap.getAllSourcesBetweenGeneratedLocations(start.generated, end.generated).map(source => {
+            if (source !== start.source && source !== end.source) {
+              push(fixWebpackPath(source), {line: 1, column: 0}, sourceMap.eofForSource(source))
+            }
+          });
         }
       }
     } else {

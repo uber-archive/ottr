@@ -26,6 +26,8 @@
 
 import {SourceMapConsumer} from 'source-map';
 
+export const DEBUG = false;
+
 type Loc = {line: number, column: number};
 
 type Mapping = {|
@@ -36,6 +38,12 @@ type Mapping = {|
   originalColumn: number
 |};
 
+/**
+ * @returns {boolean} true if a > b
+ */
+const greaterThan = (a: Loc, b: Loc) =>
+  a.line >= b.line || (a.line === b.line && a.column >= b.column);
+
 export class PreciseSourceMapper {
   mappings: Mapping[] = [];
   generatedCodeLines: (?string)[];
@@ -45,7 +53,9 @@ export class PreciseSourceMapper {
     this.generatedCodeLines = [null, ...generatedCode.split('\n')];
     const sourceMap = new SourceMapConsumer(mapJson);
     sourceMap.eachMapping(m => this.mappings.push(m), null);
-    // this.mappings.forEach(m => console.log(m));
+    if (DEBUG) {
+      this.mappings.forEach(m => console.log(m));
+    }
     for (let i = 0; i < this.mappings.length; i++) {
       const m = this.mappings[i];
       const source = m.source;
@@ -74,34 +84,48 @@ export class PreciseSourceMapper {
     let l = mapping.originalLine + (line - mapping.generatedLine);
     let c = mapping.originalColumn + (column - mapping.generatedColumn);
     const eof = this.eof[mapping.source];
-    if (eof && (l >= eof.line || (eof.line === l && c >= eof.column))) {
-      console.log(
-        `reverting to EOF for ${mapping.source} @ ${l},${c} -> ${eof.line}, ${eof.column}`
-      );
+    if (eof && greaterThan({line: l, column: c}, eof)) {
+      if (DEBUG) {
+        console.log(
+          `reverting to EOF for ${mapping.source} @ ${l},${c} -> ${eof.line}, ${eof.column}`
+        );
+      }
       l = eof.line;
       c = eof.column;
     }
     return {
       source: mapping.source,
       line: l,
-      column: c
+      column: c,
+      generated: {line, column}
     };
+  }
+
+  getAllSourcesBetweenGeneratedLocations(startGen: Loc, endGen: Loc) {
+    const sources = {};
+    for (const m of this.mappings) {
+      const gen = {line: m.generatedLine, column: m.generatedColumn};
+      if (m.source && greaterThan(gen, startGen) && greaterThan(endGen, gen)) {
+        sources[m.source] = true;
+      }
+    }
+    if (DEBUG) {
+      console.log(startGen, endGen, Object.keys(sources));
+    }
+    return Object.keys(sources);
   }
 
   eofForSource(source: string) {
     return this.eof[source];
   }
 
-  findMapping({line, column}: Loc): Mapping {
-    if (line < 1 || column < 0) {
-      throw new Error(`invalid position ${line},${column}`);
+  findMapping(generatedLoc: Loc): Mapping {
+    if (generatedLoc.line < 1 || generatedLoc.column < 0) {
+      throw new Error(`invalid position ${generatedLoc.line},${generatedLoc.column}`);
     }
     for (let i = 0; i < this.mappings.length - 1; i++) {
       const next = this.mappings[i + 1];
-      if (
-        next.generatedLine > line ||
-        (next.generateLine === line && next.generatedColumn > column)
-      ) {
+      if (greaterThan({line: next.generatedLine, column: next.generatedColumn}, generatedLoc)) {
         return this.mappings[i];
       }
     }
