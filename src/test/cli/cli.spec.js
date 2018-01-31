@@ -24,6 +24,9 @@
 
 import test from 'tape-promise/tape';
 import {runOttr, startDummyServer} from './util';
+import fs from 'fs';
+import path from 'path';
+import tmp from 'tmp';
 
 // TODO: test timeout
 
@@ -47,6 +50,36 @@ test('success - Chrome + server + imports', async t => {
   });
   t.true(launched, 'ottr should launch the web server');
   server.close();
+  t.end();
+});
+
+test.only('success - Chrome + coverage', async t => {
+  const {name: dir} = tmp.dirSync();
+  const server = await startDummyServer(dir);
+  const port = server.address().port;
+  const bin = 'node_modules/.bin';
+  await runOttr(['./bypass-istanbul.sh', ''], {
+    'bypass-istanbul.sh': `
+      #!/bin/bash
+      set -e
+      unset NYC_ROOT_ID NYC_CONFIG NYC_CWD NYC_INSTRUMENTER NYC_PARENT_PID
+      export PATH=\${PATH//node-spawn-wrap/XXX}
+      ${bin}/nyc --reporter=json-summary \\
+          ${bin}/ottr --chrome --coverage=chrome localhost:${port} test.js`,
+    'test.js': `
+      var ottr = require('ottr');
+      ottr.test('homepage works', '/home', function(t) {
+        t.equal(window.location.pathname, '/home');
+        t.true(window.ottrServerWorks);
+        t.end();
+      });`
+  }, dir);
+  server.close();
+  const coverageSummary = JSON.parse(
+    fs.readFileSync(path.resolve(dir, 'coverage/coverage-summary.json'), 'utf8')
+  );
+  console.log(coverageSummary);
+  t.ok(coverageSummary);
   t.end();
 });
 

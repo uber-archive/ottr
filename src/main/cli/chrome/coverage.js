@@ -28,8 +28,8 @@ import path from 'path';
 import url from 'url';
 import fs from 'fs';
 import {resolveSourceMap} from 'source-map-resolve';
-import {SourceMapConsumer} from 'source-map';
 import promisify from 'util.promisify';
+import {PreciseSourceMapper} from './source-mapper';
 
 type Range = {|
   start: number,
@@ -47,35 +47,25 @@ class Tracker {
   offset: number = 0;
   line: number = 1;
   offsetOfLineStart: number = 0;
-  sourceMap;
 
   constructor(text) {
     this.text = text;
-  }
-
-  setSourceMap(sm) {
-    this.sourceMap = sm;
   }
 
   get(nextOffset: number) {
     if (nextOffset < this.offset) {
       throw new Error('cannot rewind line/column tracker');
     }
-    for (; this.offset < nextOffset; this.offset++) {
+    for (; this.offset < nextOffset && this.offset < this.text.length; this.offset++) {
       if (this.text[this.offset] === '\n') {
         this.line++;
         this.offsetOfLineStart = this.offset + 1;
       }
     }
-    // Random note: it seems that the source-map library has trouble with blank lines.
-    // It appears to only work to refer to a "nonexistent" last column on the line which is reserved
-    // for the \n character itself.
-    const result = {
+    return {
       line: this.line,
-      column: nextOffset - this.offsetOfLineStart,
-      source: null
+      column: this.offset - this.offsetOfLineStart
     };
-    return this.sourceMap ? this.sourceMap.originalPositionFor(result) : result;
   }
 }
 
@@ -90,41 +80,58 @@ function urlToPath(u) {
 const fixWebpackPath = u =>
   u.match(/^webpack:/) ? path.resolve(urlToPath(u).replace(/^\/+/, '')) : urlToPath(u);
 
-async function createTracker(f) {
-  const tracker = new Tracker(f.text);
+async function createSourceMap(f) {
   try {
     const result = await promisify(resolveSourceMap)(f.text, f.url, (url2, cb) => cb('bad'));
     if (result && result.map) {
-      const sm = new SourceMapConsumer(result.map);
-      tracker.setSourceMap(sm);
+      return new PreciseSourceMapper(f.text, result.map);
     } else {
       console.warn(`could not load source map for ${f.url}`);
     }
   } catch (e) {
     console.warn(`could not load source map for ${f.url}`, e);
   }
-  return tracker;
+  return null;
 }
 
-function getSourceMappedOffsets(f, tracker) {
+function getSourceMappedOffsets(f, sourceMap, tracker) {
   const pathFromUrl = urlToPath(f.url);
   const offsetsByPath = {};
-  for (const offset of f.ranges) {
-    const out = {start: tracker.get(offset.start), end: tracker.get(offset.end)};
-    let filePath = pathFromUrl;
-    const startSource = out.start.source;
-    if (startSource && out.end.source && startSource === out.end.source) {
-      filePath = fixWebpackPath(startSource);
-    } else {
-      //TODO: do not commit
-      if (pathFromUrl.includes('frontend')) {
-        console.warn(`source for start/end dont match :( START`, out.start.source, 'END', out.end.source);
+
+  const offsetToLineCol = sourceMap
+    ? offset => {
+        const chromeLineCol = tracker.get(offset);
+        const originalLineCol = sourceMap.originalPositionFor(chromeLineCol);
+        console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
+        return originalLineCol;
       }
-    }
+    : offset => tracker.get(offset);
+
+  function push(filePath, start, end) {
     if (!offsetsByPath[filePath]) {
       offsetsByPath[filePath] = [];
     }
-    offsetsByPath[filePath].push(out);
+    offsetsByPath[filePath].push({start, end});
+  }
+  for (const offset of f.ranges) {
+    const start = offsetToLineCol(offset.start);
+    const end = offsetToLineCol(offset.end);
+    if (sourceMap) {
+      if (start.source && end.source) {
+        if (start.source === end.source) {
+          push(fixWebpackPath(start.source), start, end);
+        } else {
+          push(
+            fixWebpackPath(start.source),
+            start,
+            sourceMap.eofForSource(start.source)
+          );
+          push(fixWebpackPath(end.source), {line: 1, column: 0}, end);
+        }
+      }
+    } else {
+      push(pathFromUrl, start, end);
+    }
   }
   return offsetsByPath;
 }
@@ -132,9 +139,10 @@ function getSourceMappedOffsets(f, tracker) {
 export async function chromeCoverageToIstanbulJson(chromeCov: ChromeCoverageFileReport[]) {
   const istanbulCov = {};
   for (const f of chromeCov) {
-    const tracker = await createTracker(f);
+    const tracker = new Tracker(f.text);
+    const sourceMap = await createSourceMap(f);
 
-    const offsetsByPath = getSourceMappedOffsets(f, tracker);
+    const offsetsByPath = getSourceMappedOffsets(f, sourceMap, tracker);
 
     for (const p in offsetsByPath) {
       const statementMap = {};

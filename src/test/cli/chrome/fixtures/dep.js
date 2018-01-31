@@ -1,5 +1,12 @@
+function somethingElse() {
+  console.log('hi');
+}
+
+something = function depGo() {
+  console.log('dep.go called!')
+};
+
 module.exports = {
-  go: function depGo() {
-    console.log('dep.go called!')
-  }
+  somethingElse: somethingElse,
+  go: depGo
 };
