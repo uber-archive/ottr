@@ -33,8 +33,7 @@ type Mapping = {|
   generatedLine: number,
   generatedColumn: number,
   originalLine: number,
-  originalColumn: number,
-  last?: boolean
+  originalColumn: number
 |};
 
 export class PreciseSourceMapper {
@@ -46,7 +45,7 @@ export class PreciseSourceMapper {
     this.generatedCodeLines = [null, ...generatedCode.split('\n')];
     const sourceMap = new SourceMapConsumer(mapJson);
     sourceMap.eachMapping(m => this.mappings.push(m), null);
-    this.mappings.forEach(m => console.log(m));
+    // this.mappings.forEach(m => console.log(m));
     for (let i = 0; i < this.mappings.length; i++) {
       const m = this.mappings[i];
       const source = m.source;
@@ -63,7 +62,6 @@ export class PreciseSourceMapper {
           line: m.originalLine + (next.generatedLine - m.generatedLine),
           column: m.originalColumn + (next.generatedColumn - m.generatedColumn)
         };
-        console.log(`estimate ${source} = ${estimate.line},${estimate.column}`);
         if (estimate.line >= eof.line && estimate.column > eof.column) {
           eof = this.eof[source] = estimate;
         }
@@ -75,7 +73,6 @@ export class PreciseSourceMapper {
     const mapping = this.findMapping({line, column});
     let l = mapping.originalLine + (line - mapping.generatedLine);
     let c = mapping.originalColumn + (column - mapping.generatedColumn);
-    console.log(this.eof);
     const eof = this.eof[mapping.source];
     if (eof && (l >= eof.line || (eof.line === l && c >= eof.column))) {
       console.log(
@@ -101,7 +98,10 @@ export class PreciseSourceMapper {
     }
     for (let i = 0; i < this.mappings.length - 1; i++) {
       const next = this.mappings[i + 1];
-      if (next.generatedLine > line && next.generatedColumn > column) {
+      if (
+        next.generatedLine > line ||
+        (next.generateLine === line && next.generatedColumn > column)
+      ) {
         return this.mappings[i];
       }
     }
