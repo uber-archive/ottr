@@ -29,9 +29,6 @@ import path from 'path';
 import test from 'tape-promise/tape';
 import {chromeCoverageToIstanbulJson} from '../../../main/cli/chrome/coverage';
 
-// TODO: test start is before any file
-// TODO: test end is after any file
-
 type Loc = [number, number];
 
 const toRange = ([line, column]) => ({line, column});
@@ -111,5 +108,41 @@ test('inline source mapping conversion works (spans across 3 files)', async t =>
   expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [12, 2]]);
   // First half of dep2.js
   expectCovered(t, istCoverage, 'fixtures/dep2.js', [[1, 0], [3, 6]]);
+  t.end();
+});
+
+test('inline source mapping conversion works (spans before files)', async t => {
+  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const istCoverage = await chromeCoverageToIstanbulJson([
+    {
+      url: 'http://localhost:58947/javascript/simple-bundle.js',
+      ranges: [
+        {
+          start: 0,
+          end: 1 + code.indexOf('}', code.indexOf('function definitelyCalled'))
+        }
+      ],
+      text: code
+    }
+  ]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[1, 0], [12, 1]]);
+  t.end();
+});
+
+test('inline source mapping conversion works (spans after files)', async t => {
+  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const istCoverage = await chromeCoverageToIstanbulJson([
+    {
+      url: 'http://localhost:58947/javascript/simple-bundle.js',
+      ranges: [
+        {
+          start: code.indexOf('function definitelyCalled'),
+          end: code.length - 1
+        }
+      ],
+      text: code
+    }
+  ]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
   t.end();
 });
