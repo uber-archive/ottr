@@ -32,10 +32,5 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 unpm install --development
 
-DOCKER_TAG=tag-$BUILD_TAG
-DOCKER_ID=i-$BUILD_TAG
-
-docker build -t $DOCKER_TAG -f .jenkins/chrome-docker/Dockerfile .
-docker run --name=$DOCKER_ID $DOCKER_TAG /bin/ls -lh
-docker cp $DOCKER_ID:artifacts artifacts
-
+# Ensure that `npm` is executed with the specified node version
+n use $NODE_VERSION $(which npm) run jenkins
