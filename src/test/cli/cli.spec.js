@@ -23,7 +23,7 @@
  */
 
 import test from 'tape-promise/tape';
-import {runOttr, startDummyServer} from './util';
+import {FRONTEND_JS, runOttr, startDummyServer} from './util';
 import fs from 'fs';
 import path from 'path';
 import tmp from 'tmp';
@@ -64,8 +64,9 @@ test.only('success - Chrome + coverage', async t => {
       set -e
       unset NYC_ROOT_ID NYC_CONFIG NYC_CWD NYC_INSTRUMENTER NYC_PARENT_PID
       export PATH=\${PATH//node-spawn-wrap/XXX}
-      ${bin}/nyc --reporter=json-summary \\
+      ${bin}/nyc --reporter=json-summary --reporter=html \\
           ${bin}/ottr --chrome --coverage=chrome localhost:${port} test.js`,
+    'src/gui/frontend.js': FRONTEND_JS,
     'test.js': `
       var ottr = require('ottr');
       ottr.test('homepage works', '/home', function(t) {
@@ -80,6 +81,7 @@ test.only('success - Chrome + coverage', async t => {
   );
   console.log(coverageSummary);
   t.ok(coverageSummary);
+  //TODO: actually check coverage numbers. should be 5 lines covered i think
   t.end();
 });
 

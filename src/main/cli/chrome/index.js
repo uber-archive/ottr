@@ -60,13 +60,11 @@ export class ChromeRunner {
       const istanbulCoverage = await chromeCoverageToIstanbulJson(chromeCoverage);
       const map = libCoverage.createCoverageMap(global.__coverage__);
       map.merge(istanbulCoverage);
-      global.__coverage__ = map.toJSON();
-      console.log('before creating nyc', Object.keys(global.__coverage__))
-      const nyc = new NYC();
-      console.log(nyc.config);
-      console.log('after creating nyc', Object.keys(global.__coverage__))
-      nyc.writeCoverageFile();
-      console.log('after writing nyc', Object.keys(global.__coverage__))
+      // There's probably a faster way to do this, but we need to convert it back to JSON to prevent
+      // instanceof checks from failing deep within istanbul. Long story short, if you have multiple
+      // copies of 'istanbul-lib-coverage' in node_modules (which for some reason we do), you need
+      // to convert to JSON here.
+      global.__coverage__ = JSON.parse(JSON.stringify(map));
     }
     await this.browser.close();
   }

@@ -30,7 +30,7 @@ import {logEachLine} from '../../main/util';
 import fs from 'fs';
 import {spawn} from 'child_process';
 import tmp from 'tmp';
-import mkdirp from 'mkdirp';
+import {sync as mkdirp} from 'mkdirp';
 import getPort from 'get-port';
 import {transform} from 'babel-core';
 
@@ -60,7 +60,7 @@ const setupNodeModules = dir => {
 
 const noop = () => {};
 
-const FRONTEND_JS = `
+export const FRONTEND_JS = `
   const covered = () => {
     window.ottrServerWorks = true;
   }
@@ -69,7 +69,8 @@ const FRONTEND_JS = `
   }
   covered();`;
 
-export const startDummyServer = async (dir: string = '', launchedCallback: () => any = noop) => {
+export const startDummyServer = async (dirOrig: string = '', launchedCallback: () => any = noop) => {
+  const dir = dirOrig.length > 0 ? fs.realpathSync(dirOrig) : dirOrig;
   const port = await getPort();
   const app = express();
   app.get('/home', (req: express$Request, res: express$Response) => {
@@ -82,7 +83,7 @@ export const startDummyServer = async (dir: string = '', launchedCallback: () =>
     sourceMaps: 'inline',
     sourceRoot: dir
   }).code;
-  console.log(instrumentedFrontendCode)
+  console.log(instrumentedFrontendCode);
   app.get('/frontend.js', (req: express$Request, res: express$Response) => {
     console.log(`[dummy] server got request for ${req.url}`);
     res.set('Content-Type', 'text/javascript');
@@ -107,7 +108,7 @@ const run = (cmd, options) =>
 export const runOttr = async (
   cmdline: string | string[],
   files: {[string]: string},
-  dir?: string = tmp.dirSync().name
+  dirOrig?: string = tmp.dirSync().name
 ) => {
   let prefix = '';
   let args;
@@ -116,6 +117,7 @@ export const runOttr = async (
   } else {
     [prefix, args] = cmdline;
   }
+  const dir = fs.realpathSync(dirOrig);
   setupNodeModules(dir);
   Object.keys(files).forEach(p => {
     const abs = path.resolve(dir, p);
