@@ -1,0 +1,16 @@
+[
+  {
+    "url": "http://localhost:50505/frontend.js",
+    "ranges": [
+      {
+        "start": 0,
+        "end": 79
+      },
+      {
+        "start": 119,
+        "end": 1036
+      }
+    ],
+    "text": "\nconst covered = () => {\n  window.ottrServerWorks = true;\n};\nconst uncovered = () => {\n  console.log('never called');\n};\ncovered();\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9wcml2YXRlL3Zhci9mb2xkZXJzL3kwL2prYnI3YnlzMHY5MXI3eGdzdl9yZGRkbTAwMDBnbi9UL3RtcC01NTczOExORUMyTFE4RVNlOS9zcmMvZ3VpL2Zyb250ZW5kLmpzIl0sIm5hbWVzIjpbImNvdmVyZWQiLCJ3aW5kb3ciLCJvdHRyU2VydmVyV29ya3MiLCJ1bmNvdmVyZWQiLCJjb25zb2xlIiwibG9nIl0sIm1hcHBpbmdzIjoiO0FBQ0UsTUFBTUEsVUFBVSxNQUFNO0FBQ3BCQyxTQUFPQyxlQUFQLEdBQXlCLElBQXpCO0FBQ0QsQ0FGRDtBQUdBLE1BQU1DLFlBQVksTUFBTTtBQUN0QkMsVUFBUUMsR0FBUixDQUFZLGNBQVo7QUFDRCxDQUZEO0FBR0FMIiwiZmlsZSI6ImZyb250ZW5kLmpzIiwic291cmNlUm9vdCI6Ii9wcml2YXRlL3Zhci9mb2xkZXJzL3kwL2prYnI3YnlzMHY5MXI3eGdzdl9yZGRkbTAwMDBnbi9UL3RtcC01NTczOExORUMyTFE4RVNlOSIsInNvdXJjZXNDb250ZW50IjpbIlxuICBjb25zdCBjb3ZlcmVkID0gKCkgPT4ge1xuICAgIHdpbmRvdy5vdHRyU2VydmVyV29ya3MgPSB0cnVlO1xuICB9XG4gIGNvbnN0IHVuY292ZXJlZCA9ICgpPT4gIHtcbiAgICBjb25zb2xlLmxvZygnbmV2ZXIgY2FsbGVkJyk7XG4gIH1cbiAgY292ZXJlZCgpOyJdfQ=="
+  }
+]

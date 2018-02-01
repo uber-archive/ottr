@@ -83,7 +83,6 @@ export const startDummyServer = async (dirOrig: string = '', launchedCallback: (
     sourceMaps: 'inline',
     sourceRoot: dir
   }).code;
-  console.log(instrumentedFrontendCode);
   app.get('/frontend.js', (req: express$Request, res: express$Response) => {
     console.log(`[dummy] server got request for ${req.url}`);
     res.set('Content-Type', 'text/javascript');

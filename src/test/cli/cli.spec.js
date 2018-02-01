@@ -53,7 +53,7 @@ test('success - Chrome + server + imports', async t => {
   t.end();
 });
 
-test.only('success - Chrome + coverage', async t => {
+test('success - Chrome + coverage', async t => {
   const {name: dir} = tmp.dirSync();
   const server = await startDummyServer(dir);
   const port = server.address().port;

@@ -82,7 +82,7 @@ const fixWebpackPath = u =>
 
 async function createSourceMap(f) {
   try {
-    const result = await promisify(resolveSourceMap)(f.text, f.url, (url2, cb) => cb('bad'));
+    const result = await promisify(resolveSourceMap)(f.text, f.url, (url2, cb) => cb('not found'));
     if (result && result.map) {
       return new PreciseSourceMapper(f.text, result.map);
     } else {
@@ -115,6 +115,7 @@ function getSourceMappedOffsets(f, sourceMap, tracker) {
     }
     offsetsByPath[filePath].push({start, end});
   }
+  console.log('getSourceMappedOffsets cwd', process.cwd(), ' ; ', path.resolve('xxx'))
   for (const offset of f.ranges) {
     const start = offsetToLineCol(offset.start);
     const end = offsetToLineCol(offset.end);
@@ -165,7 +166,10 @@ export async function chromeCoverageToIstanbulJson(chromeCov: ChromeCoverageFile
       istanbulCov[p] = {path: p, statementMap, s, branchMap: {}, b: {}, fnMap: {}, f: {}};
     }
   }
-  // fs.writeFileSync('istanbul.json', JSON.stringify(istanbulCov));
-  // console.log('ISTANBUL', Object.keys(istanbulCov));
+  if (DEBUG) {
+    fs.writeFileSync('chrome.json', JSON.stringify(chromeCov));
+    fs.writeFileSync('istanbul.json', JSON.stringify(istanbulCov));
+    console.log('ISTANBUL', Object.keys(istanbulCov));
+  }
   return istanbulCov;
 }

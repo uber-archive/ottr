@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "sources": [
+    "/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9/src/gui/frontend.js"
+  ],
+  "names": [
+    "covered",
+    "window",
+    "ottrServerWorks",
+    "uncovered",
+    "console",
+    "log"
+  ],
+  "mappings": ";AACE,MAAMA,UAAU,MAAM;AACpBC,SAAOC,eAAP,GAAyB,IAAzB;AACD,CAFD;AAGA,MAAMC,YAAY,MAAM;AACtBC,UAAQC,GAAR,CAAY,cAAZ;AACD,CAFD;AAGAL",
+  "file": "frontend.js",
+  "sourceRoot": "/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9",
+  "sourcesContent": [
+    "\n  const covered = () => {\n    window.ottrServerWorks = true;\n  }\n  const uncovered = ()=>  {\n    console.log('never called');\n  }\n  covered();"
+  ]
+}

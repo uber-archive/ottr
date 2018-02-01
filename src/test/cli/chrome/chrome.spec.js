@@ -39,7 +39,7 @@ function expectCovered(t, istCoverage, relpath, ...ranges: Array<[Loc, Loc]>) {
   t.ok(cov, `expected coverage info for ${abspath} (got ${Object.keys(istCoverage).join(', ')})`);
   t.equal(Object.keys(cov.statementMap).length, ranges.length, `number of covered ranges`);
   ranges.forEach((expectedRange, i) => {
-    const prefix = `[${relpath}]`;
+    const prefix = `[${path.basename(relpath)}]`;
     const id = `${i}`;
     const r = cov.statementMap[id];
     t.ok(r, `${prefix} range[${i}] found in source map`);
@@ -144,5 +144,15 @@ test('inline source mapping conversion works (spans after files)', async t => {
     }
   ]);
   expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
+  t.end();
+});
+
+test('inline source mapping conversion works (real life example)', async t => {
+  const chromeCov = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, 'fixtures/real-chrome-coverage.json'), 'utf8')
+  );
+  const istCoverage = await chromeCoverageToIstanbulJson(chromeCov);
+  const FILENAME = '/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9/src/gui/frontend.js';
+  expectCovered(t, istCoverage, FILENAME, [[1, 2], [5, 20]], [[7, 4], [8, 12]]);
   t.end();
 });

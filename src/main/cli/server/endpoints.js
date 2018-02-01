@@ -62,7 +62,6 @@ export function setupWebSockets(appServer: net$Server) {
       (console[logType] || console.log)(...args);
     });
     client.on('tests', ([session, , tests]) => {
-      console.log('got tests')
       Object.keys(tests).map(name =>
         Object.assign(getOrCreateTest(session, name), tests[name])
       );

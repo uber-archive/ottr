@@ -104,6 +104,7 @@ class Ottr {
       console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
       // TODO: only import puppeteer if user wants this feature
       this.chrome = new ChromeRunner(
+        this.exit,
         sessionUrl,
         !this.command.inspect,
         this.command.coverage === 'chrome',
@@ -140,7 +141,7 @@ class Ottr {
       try {
         await this.chrome.finish();
       } catch (e) {
-        console.error('error shutting down Chrome', e);
+        console.error('[ottr] error shutting down Chrome', e);
       }
     }
     if (printHelp) {

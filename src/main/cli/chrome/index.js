@@ -27,15 +27,22 @@
 import puppeteer from 'puppeteer';
 import {logEachLine} from '../../util';
 import libCoverage from 'istanbul-lib-coverage';
-import {chromeCoverageToIstanbulJson} from "./coverage";
+import {chromeCoverageToIstanbulJson} from './coverage';
 import NYC from 'nyc';
+import fs from 'fs';
 
 export class ChromeRunner {
   startupCompletePromise: Promise<*>;
   captureCoverage: boolean;
   browser: puppeteer.Browser;
 
-  constructor(url: string, headless: boolean, coverage: boolean, chromeBinary?: string) {
+  constructor(
+    exit: number => any,
+    url: string,
+    headless: boolean,
+    coverage: boolean,
+    chromeBinary?: string
+  ) {
     this.captureCoverage = coverage;
     this.startupCompletePromise = (async () => {
       this.browser = await puppeteer.launch({
@@ -50,11 +57,12 @@ export class ChromeRunner {
       page.goto(url, {timeout: 0}).catch(e => console.error(e));
       return page;
     })();
+    this.startupCompletePromise.catch(exit);
   }
 
   async finish() {
     if (this.captureCoverage) {
-      console.log('capturing coverage from Chrome');
+      console.log('[ottr] downloading and converting coverage data from Chrome...');
       const page = await this.startupCompletePromise;
       const chromeCoverage = await page.coverage.stopJSCoverage();
       const istanbulCoverage = await chromeCoverageToIstanbulJson(chromeCoverage);

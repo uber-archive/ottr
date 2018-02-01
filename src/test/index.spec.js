@@ -28,5 +28,5 @@ import 'source-map-support/register';
 import 'babel-polyfill';
 
 // no tests yet
-import './cli/index.spec.js';
-import './cli/chrome/index.spec.js';
+import './cli/cli.spec.js';
+import './cli/chrome/chrome.spec.js';

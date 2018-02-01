@@ -41,8 +41,8 @@ type Mapping = {|
 /**
  * @returns {boolean} true if a > b
  */
-const greaterThan = (a: Loc, b: Loc) =>
-  a.line >= b.line || (a.line === b.line && a.column >= b.column);
+const greaterThanOrEq = (a: Loc, b: Loc) =>
+  a.line > b.line || (a.line === b.line && a.column >= b.column);
 
 export class PreciseSourceMapper {
   mappings: Mapping[] = [];
@@ -63,7 +63,7 @@ export class PreciseSourceMapper {
         continue;
       }
       let eof = this.eof[source];
-      if (!eof || (m.originalLine >= eof.line && m.originalColumn >= eof.column)) {
+      if (!eof || greaterThanOrEq({line: m.originalLine, column: m.originalColumn}, eof)) {
         eof = this.eof[source] = {line: m.originalLine, column: m.originalColumn};
       }
       const next = this.mappings[i + 1];
@@ -72,19 +72,28 @@ export class PreciseSourceMapper {
           line: m.originalLine + (next.generatedLine - m.generatedLine),
           column: m.originalColumn + (next.generatedColumn - m.generatedColumn)
         };
-        if (estimate.line >= eof.line && estimate.column > eof.column) {
+        if (greaterThanOrEq(estimate, eof)) {
           eof = this.eof[source] = estimate;
         }
       }
+    }
+    if (DEBUG) {
+      console.log('EOF', this.eof);
     }
   }
 
   originalPositionFor({line, column}: Loc) {
     const mapping = this.findMapping({line, column});
+    if (DEBUG) {
+      console.log(`${line},${column} - using mapping`, mapping);
+    }
     let l = mapping.originalLine + (line - mapping.generatedLine);
-    let c = mapping.originalColumn + (column - mapping.generatedColumn);
+    let c =
+      mapping.generatedLine < line
+        ? column
+        : mapping.originalColumn + (column - mapping.generatedColumn);
     const eof = this.eof[mapping.source];
-    if (eof && greaterThan({line: l, column: c}, eof)) {
+    if (eof && greaterThanOrEq({line: l, column: c}, eof)) {
       if (DEBUG) {
         console.log(
           `reverting to EOF for ${mapping.source} @ ${l},${c} -> ${eof.line}, ${eof.column}`
@@ -105,7 +114,7 @@ export class PreciseSourceMapper {
     const sources = {};
     for (const m of this.mappings) {
       const gen = {line: m.generatedLine, column: m.generatedColumn};
-      if (m.source && greaterThan(gen, startGen) && greaterThan(endGen, gen)) {
+      if (m.source && greaterThanOrEq(gen, startGen) && greaterThanOrEq(endGen, gen)) {
         sources[m.source] = true;
       }
     }
@@ -125,7 +134,8 @@ export class PreciseSourceMapper {
     }
     for (let i = 0; i < this.mappings.length - 1; i++) {
       const next = this.mappings[i + 1];
-      if (greaterThan({line: next.generatedLine, column: next.generatedColumn}, generatedLoc)) {
+      const test = {line: next.generatedLine, column: next.generatedColumn};
+      if (greaterThanOrEq(test, generatedLoc)) {
         return this.mappings[i];
       }
     }
