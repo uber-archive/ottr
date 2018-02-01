@@ -81,7 +81,7 @@ test('success - Chrome + coverage', async t => {
   );
   console.log(coverageSummary);
   t.ok(coverageSummary);
-  //TODO: actually check coverage numbers. should be 5 lines covered i think
+  // TODO: actually check coverage numbers. should be 5 lines covered i think
   t.end();
 });
 

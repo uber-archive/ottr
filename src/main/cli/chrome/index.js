@@ -28,8 +28,6 @@ import puppeteer from 'puppeteer';
 import {logEachLine} from '../../util';
 import libCoverage from 'istanbul-lib-coverage';
 import {chromeCoverageToIstanbulJson} from './coverage';
-import NYC from 'nyc';
-import fs from 'fs';
 
 export class ChromeRunner {
   startupCompletePromise: Promise<*>;

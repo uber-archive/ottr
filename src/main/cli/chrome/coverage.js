@@ -85,29 +85,43 @@ async function createSourceMap(f) {
     const result = await promisify(resolveSourceMap)(f.text, f.url, (url2, cb) => cb('not found'));
     if (result && result.map) {
       return new PreciseSourceMapper(f.text, result.map);
-    } else {
-      console.warn(`could not load source map for ${f.url}`);
     }
+    console.warn(`could not load source map for ${f.url}`);
   } catch (e) {
     console.warn(`could not load source map for ${f.url}`, e);
   }
   return null;
 }
 
+function pushAll(sourceMap, start, end, push) {
+  if (start.source === end.source) {
+    push(fixWebpackPath(start.source), start, end);
+  } else {
+    push(fixWebpackPath(start.source), start, sourceMap.eofForSource(start.source));
+    push(fixWebpackPath(end.source), {line: 1, column: 0}, end);
+    sourceMap.getAllSourcesBetweenGeneratedLocations(start.generated, end.generated).map(source => {
+      if (source !== start.source && source !== end.source) {
+        push(fixWebpackPath(source), {line: 1, column: 0}, sourceMap.eofForSource(source));
+      }
+    });
+  }
+}
+
 function getSourceMappedOffsets(f, sourceMap, tracker) {
   const pathFromUrl = urlToPath(f.url);
   const offsetsByPath = {};
 
-  const offsetToLineCol = sourceMap
-    ? offset => {
-        const chromeLineCol = tracker.get(offset);
-        const originalLineCol = sourceMap.originalPositionFor(chromeLineCol);
-        if (DEBUG) {
-          console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
-        }
-        return originalLineCol;
-      }
-    : offset => tracker.get(offset);
+  const offsetToLineCol = offset => {
+    const chromeLineCol = tracker.get(offset);
+    if (!sourceMap) {
+      return chromeLineCol;
+    }
+    const originalLineCol = sourceMap.originalPositionFor(chromeLineCol);
+    if (DEBUG) {
+      console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
+    }
+    return originalLineCol;
+  };
 
   function push(filePath, start, end) {
     if (!offsetsByPath[filePath]) {
@@ -115,27 +129,12 @@ function getSourceMappedOffsets(f, sourceMap, tracker) {
     }
     offsetsByPath[filePath].push({start, end});
   }
-  console.log('getSourceMappedOffsets cwd', process.cwd(), ' ; ', path.resolve('xxx'))
   for (const offset of f.ranges) {
     const start = offsetToLineCol(offset.start);
     const end = offsetToLineCol(offset.end);
     if (sourceMap) {
       if (start.source && end.source) {
-        if (start.source === end.source) {
-          push(fixWebpackPath(start.source), start, end);
-        } else {
-          push(
-            fixWebpackPath(start.source),
-            start,
-            sourceMap.eofForSource(start.source)
-          );
-          push(fixWebpackPath(end.source), {line: 1, column: 0}, end);
-          sourceMap.getAllSourcesBetweenGeneratedLocations(start.generated, end.generated).map(source => {
-            if (source !== start.source && source !== end.source) {
-              push(fixWebpackPath(source), {line: 1, column: 0}, sourceMap.eofForSource(source))
-            }
-          });
-        }
+        pushAll(sourceMap, start, end, push);
       }
     } else {
       push(pathFromUrl, start, end);

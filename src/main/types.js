@@ -19,5 +19,5 @@ export type Session = {
   +names: string[],
   +tests: {[name: string]: Test},
   +done?: boolean,
-  +error: ?string
+  +error?: string
 };
