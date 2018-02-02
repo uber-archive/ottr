@@ -23,9 +23,16 @@
  */
 
 // @flow
+/* eslint-env node */
 
 import 'source-map-support/register';
 import 'babel-polyfill';
+
+import test from 'tape';
+
+// This is required on Jenkins. Not sure why. The build times out without it
+// eslint-disable-next-line no-process-exit
+test.onFinish(() => process.exit(0));
 
 // no tests yet
 import './cli/cli.spec.js';
