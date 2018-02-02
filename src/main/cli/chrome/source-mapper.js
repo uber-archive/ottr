@@ -44,6 +44,20 @@ type Mapping = {|
 const greaterThanOrEq = (a: Loc, b: Loc) =>
   a.line > b.line || (a.line === b.line && a.column >= b.column);
 
+function getEndPosition(code): Loc {
+  let line = 1;
+  let column = 0;
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === '\n') {
+      line++;
+      column = 0;
+    } else {
+      column++;
+    }
+  }
+  return {line, column};
+}
+
 export class PreciseSourceMapper {
   mappings: Mapping[] = [];
   generatedCodeLines: (?string)[];
@@ -56,6 +70,14 @@ export class PreciseSourceMapper {
     if (DEBUG) {
       this.mappings.forEach(m => console.log(m));
     }
+    this.calculateEofs();
+    this.checkSourcesForEofs(sourceMap);
+    if (DEBUG) {
+      console.log('EOFs', this.eof);
+    }
+  }
+
+  calculateEofs() {
     for (let i = 0; i < this.mappings.length; i++) {
       const m = this.mappings[i];
       const source = m.source;
@@ -77,8 +99,27 @@ export class PreciseSourceMapper {
         }
       }
     }
-    if (DEBUG) {
-      console.log('EOF', this.eof);
+  }
+
+  checkSourcesForEofs(sourceMap: SourceMapConsumer) {
+    for (const source in this.eof) {
+      const originalCode = sourceMap.sourceContentFor(source, true);
+      if (!originalCode || !originalCode.length) {
+        continue;
+      }
+      const end = getEndPosition(originalCode);
+      if (greaterThanOrEq(end, this.eof[source])) {
+        if (DEBUG) {
+          console.log(
+            `source map did not include end position for ${source} - increased eof from `,
+            this.eof[source],
+            '->',
+            end
+          );
+          console.log(originalCode);
+        }
+        this.eof[source] = end;
+      }
     }
   }
 

@@ -81,8 +81,8 @@ test('inline source mapping conversion works (spans across 2 files)', async t =>
       text: code
     }
   ]);
-  // Second half of simple.js
-  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
+  // Second half of simple.js (Webpack generates bad source maps so this includes Webpack footer)
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [21, 20]]);
   // First half of dep.js
   expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [5, 12]]);
   t.end();
@@ -103,9 +103,9 @@ test('inline source mapping conversion works (spans across 3 files)', async t =>
     }
   ]);
   // Second half of simple.js
-  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [21, 20]]);
   // all of dep.js
-  expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [12, 2]]);
+  expectCovered(t, istCoverage, 'fixtures/dep.js', [[1, 0], [19, 20]]);
   // First half of dep2.js
   expectCovered(t, istCoverage, 'fixtures/dep2.js', [[1, 0], [3, 6]]);
   t.end();
@@ -143,7 +143,7 @@ test('inline source mapping conversion works (spans after files)', async t => {
       text: code
     }
   ]);
-  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [14, 19]]);
+  expectCovered(t, istCoverage, 'fixtures/simple.js', [[10, 0], [21, 20]]);
   t.end();
 });
 
@@ -152,7 +152,8 @@ test('inline source mapping conversion works (real life example)', async t => {
     fs.readFileSync(path.resolve(__dirname, 'fixtures/real-chrome-coverage.json'), 'utf8')
   );
   const istCoverage = await chromeCoverageToIstanbulJson(chromeCov);
-  const FILENAME = '/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9/src/gui/frontend.js';
+  const FILENAME =
+    '/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9/src/gui/frontend.js';
   expectCovered(t, istCoverage, FILENAME, [[1, 2], [5, 20]], [[7, 4], [8, 12]]);
   t.end();
 });
