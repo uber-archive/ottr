@@ -29,6 +29,9 @@ import path from 'path';
 import tmp from 'tmp';
 
 // TODO: test timeout
+// TODO: test Istanbul coverage
+// TODO: test mix of Istanbul coverage and Chrome coverage
+// TODO: test server coverage
 
 test('success - Chrome + server + imports', async t => {
   let launched = false;
@@ -58,30 +61,34 @@ test('success - Chrome + coverage', async t => {
   const server = await startDummyServer(dir);
   const port = server.address().port;
   const bin = 'node_modules/.bin';
-  await runOttr(['./bypass-istanbul.sh', ''], {
-    'bypass-istanbul.sh': `
+  await runOttr(
+    ['./bypass-istanbul.sh', ''],
+    {
+      'bypass-istanbul.sh': `
       #!/bin/bash
       set -e
       unset NYC_ROOT_ID NYC_CONFIG NYC_CWD NYC_INSTRUMENTER NYC_PARENT_PID
       export PATH=\${PATH//node-spawn-wrap/XXX}
       ${bin}/nyc --reporter=json-summary --reporter=html \\
           ${bin}/ottr --chrome --coverage=chrome localhost:${port} test.js`,
-    'src/gui/frontend.js': FRONTEND_JS,
-    'test.js': `
+      'src/gui/frontend.js': FRONTEND_JS,
+      'test.js': `
       var ottr = require('ottr');
       ottr.test('homepage works', '/home', function(t) {
         t.equal(window.location.pathname, '/home');
         t.true(window.ottrServerWorks);
         t.end();
       });`
-  }, dir);
+    },
+    dir
+  );
   server.close();
   const coverageSummary = JSON.parse(
     fs.readFileSync(path.resolve(dir, 'coverage/coverage-summary.json'), 'utf8')
   );
   console.log(coverageSummary);
-  t.ok(coverageSummary);
-  // TODO: actually check coverage numbers. should be 5 lines covered i think
+  t.equal(coverageSummary.total.lines.total, 8);
+  t.equal(coverageSummary.total.lines.covered, 7);
   t.end();
 });
 

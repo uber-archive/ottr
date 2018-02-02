@@ -41,7 +41,7 @@ type Mapping = {|
 /**
  * @returns {boolean} true if a > b
  */
-const greaterThanOrEq = (a: Loc, b: Loc) =>
+export const greaterThanOrEq = (a: Loc, b: Loc) =>
   a.line > b.line || (a.line === b.line && a.column >= b.column);
 
 function getEndPosition(code): Loc {
@@ -75,6 +75,10 @@ export class PreciseSourceMapper {
     if (DEBUG) {
       console.log('EOFs', this.eof);
     }
+  }
+
+  getEof(source: string) {
+    return this.eof[source];
   }
 
   calculateEofs() {
