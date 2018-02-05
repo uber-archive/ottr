@@ -2,4 +2,4 @@ typedefs
 dist-test
 lib
 node_modules
-src/test/cli/chrome/fixtures
+fixtures

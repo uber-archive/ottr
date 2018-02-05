@@ -38,6 +38,8 @@ const toRange = ([line, column]) => ({line, column});
 const convertWithoutInterpolation = chromeCov =>
   chromeCoverageToIstanbulJson(chromeCov, false, false);
 
+const fixture = p => fs.readFileSync(path.resolve(__dirname, 'fixtures', p), 'utf8');
+
 function expectCovered(t, istCoverage, relpath, ...ranges: Array<[Loc, Loc]>) {
   const abspath = path.resolve(relpath);
   const cov = istCoverage[abspath];
@@ -55,7 +57,7 @@ function expectCovered(t, istCoverage, relpath, ...ranges: Array<[Loc, Loc]>) {
 }
 
 test('inline source mapping conversion works (within single file)', async t => {
-  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const code = fixture('simple-bundle.js');
   const istCoverage = await convertWithoutInterpolation([
     {
       url: 'http://localhost:58947/javascript/simple-bundle.js',
@@ -73,7 +75,7 @@ test('inline source mapping conversion works (within single file)', async t => {
 });
 
 test('inline source mapping conversion works (spans across 2 files)', async t => {
-  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const code = fixture('simple-bundle.js');
   const istCoverage = await convertWithoutInterpolation([
     {
       url: 'http://localhost:58947/javascript/simple-bundle.js',
@@ -94,7 +96,7 @@ test('inline source mapping conversion works (spans across 2 files)', async t =>
 });
 
 test('inline source mapping conversion works (spans across 3 files)', async t => {
-  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const code = fixture('simple-bundle.js');
   const istCoverage = await convertWithoutInterpolation([
     {
       url: 'http://localhost:58947/javascript/simple-bundle.js',
@@ -117,7 +119,7 @@ test('inline source mapping conversion works (spans across 3 files)', async t =>
 });
 
 test('inline source mapping conversion works (spans before files)', async t => {
-  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const code = fixture('simple-bundle.js');
   const istCoverage = await convertWithoutInterpolation([
     {
       url: 'http://localhost:58947/javascript/simple-bundle.js',
@@ -135,7 +137,7 @@ test('inline source mapping conversion works (spans before files)', async t => {
 });
 
 test('inline source mapping conversion works (spans after files)', async t => {
-  const code = fs.readFileSync(path.resolve(__dirname, 'fixtures/simple-bundle.js'), 'utf8');
+  const code = fixture('simple-bundle.js');
   const istCoverage = await convertWithoutInterpolation([
     {
       url: 'http://localhost:58947/javascript/simple-bundle.js',
@@ -153,9 +155,7 @@ test('inline source mapping conversion works (spans after files)', async t => {
 });
 
 test('inline source mapping conversion works (real life example)', async t => {
-  const chromeCov = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, 'fixtures/real-chrome-coverage.json'), 'utf8')
-  );
+  const chromeCov = JSON.parse(fixture('real-chrome-coverage.json'));
   const istCoverage = await convertWithoutInterpolation(chromeCov);
   const FILENAME =
     '/private/var/folders/y0/jkbr7bys0v91r7xgsv_rdddm0000gn/T/tmp-55738LNEC2LQ8ESe9/src/gui/frontend.js';

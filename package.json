@@ -24,7 +24,7 @@
   "scripts": {
     "postinstall": "mkdir -p lib/static/css lib/static/fonts && cp -Rv node_modules/font-awesome/css/* lib/static/css && cp -Rv node_modules/font-awesome/fonts/* lib/static/fonts",
     "build": "rm -rf lib && babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* lib/static && npm run postinstall",
-    "build-test": "npm run build && babel src -d dist-test --source-maps && rm -rf dist-test/test/cli/chrome/fixtures/* && cp -rf src/test/cli/chrome/fixtures/*.js* dist-test/test/cli/chrome/fixtures",
+    "build-test": "npm run build && babel src -d dist-test --source-maps && mkdir -p dist-test/test/cli/chrome/fixtures && cp -rf fixtures/*.js* dist-test/test/cli/chrome/fixtures",
     "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js; nyc report",
     "test": "npm run cover",
     "jenkins": "npm run lint && npm run flow && npm run cover",
