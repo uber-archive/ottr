@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js
@@ -22,10 +24,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 /* eslint-disable no-process-exit,node/shebang,no-unreachable */
-
-// @flow
 
 import 'source-map-support/register';
 import 'babel-polyfill';
@@ -34,8 +33,8 @@ import fs from 'fs';
 import {packageForBrowser} from './packager';
 import path from 'path';
 import url from 'url';
-import {logEachLine} from '../util';
-import commander from 'commander';
+import {logEachLine, nonnull} from '../util';
+import {Command} from 'commander';
 import {ChromeRunner, runChrome} from './chrome';
 import {spawn} from 'child_process';
 import {createSession, DEFAULT_ERROR, getSessions} from './server/sessions';
@@ -44,7 +43,7 @@ import fetch from 'node-fetch';
 
 const DEFAULT_SERVER_STARTUP_TIMEOUT_SECS = 30;
 
-const run = (title, cmd, options) =>
+const run = (title: string, cmd: string, options) =>
   new Promise((resolve, reject) => {
     const child = spawn(cmd, [], options);
     child.stdout.on('data', data => logEachLine(`[${title}]`, data));
@@ -82,11 +81,22 @@ const serverOnline = async (u, timeoutMs) => {
   }
 };
 
+type OttrCommand = Command & {
+  server?: string,
+  waitTimeout?: number,
+  waitPath?: string,
+  inspect?: boolean,
+  chrome?: boolean,
+  debug?: boolean,
+  chromium?: string,
+  coverage?: string
+};
+
 class Ottr {
-  command;
+  command: OttrCommand;
   chrome: ChromeRunner;
 
-  constructor(command) {
+  constructor(command: OttrCommand) {
     this.command = command;
   }
 
@@ -121,7 +131,7 @@ class Ottr {
     const [targetOrig, testFileOrig] = this.command.args;
     if (this.command.server) {
       console.log(`[ottr] starting server ${this.command.server}`);
-      run('ottr:server', this.command.server, {shell: true}).catch(this.exit);
+      run('ottr:server', nonnull(this.command.server), {shell: true}).catch(this.exit);
     }
 
     await packageForBrowser(testFileOrig);
@@ -202,7 +212,7 @@ class Ottr {
   };
 }
 
-const args = commander
+const args = new Command()
   .description(
     `  url:  the website to run your tests against
     file: root end-to-end test file that runs all your tests`

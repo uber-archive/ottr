@@ -1,4 +1,6 @@
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js
@@ -22,7 +24,6 @@
  * SOFTWARE.
  */
 
-// @flow
 /* eslint-env browser */
 
 import 'whatwg-fetch';
@@ -38,6 +39,7 @@ const submitTestsToServer = once(() => {
   emitEvent('tests', ottrTests);
 });
 
+// $FlowFixMe
 window.ottrTestInitFinished = submitTestsToServer;
 
 if (currentTestSession) {

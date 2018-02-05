@@ -1,4 +1,6 @@
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js
@@ -21,8 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-// @flow
 
 import fs from 'fs';
 import path from 'path';

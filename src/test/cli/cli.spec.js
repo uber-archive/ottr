@@ -1,4 +1,6 @@
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js

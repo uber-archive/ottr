@@ -1,4 +1,6 @@
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js
@@ -22,7 +24,6 @@
  * SOFTWARE.
  */
 
-// @flow
 /* eslint-env node */
 
 import 'source-map-support/register';

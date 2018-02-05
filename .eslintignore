@@ -3,3 +3,4 @@ dist-test
 lib
 node_modules
 fixtures
+flow-typed

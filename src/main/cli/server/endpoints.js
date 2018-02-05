@@ -1,4 +1,6 @@
 /*
+ * @flow
+ *
  * MIT License
  *
  * Copyright (c) 2017 Uber Node.js
@@ -22,10 +24,10 @@
  * SOFTWARE.
  */
 
-// @flow
-
 import io from 'socket.io';
 import {getOrCreateSession, getOrCreateTest, sessions} from './sessions';
+// eslint-disable-next-line no-unused-vars
+import type {Test} from "../../types";
 
 export const setupEndpoints = (app: express$Application) =>
   app.get(`${'/_ottr/api'}/session/:id`, (req: express$Request, res: express$Response) => {
@@ -42,10 +44,18 @@ const toString = a =>
 
 const convertConsoleLogArgsToString = args => args.map(toString).join('');
 
+// https://github.com/facebook/flow/issues/1295
+declare class OttrSocket {
+  on(name: 'console', fn: (string[]) => any): void,
+  on(name: 'tests', fn: ([string, string, {string: Test}]) => any): void,
+  on(name: 'done', fn: ([string, string]) => any): void,
+  on(name: 'fail', fn: ([string, string, string]) => any): void;
+}
+
 export function setupWebSockets(appServer: net$Server) {
   const webSocketSession = io(appServer, {path: '/_ottr/socket.io'});
 
-  webSocketSession.on('connection', client => {
+  webSocketSession.on('connection', (client: OttrSocket & SocketIO$Socket) => {
     client.on('console', ([session, testName, logType, ...args]) => {
       if (testName) {
         const test = getOrCreateTest(session, testName);

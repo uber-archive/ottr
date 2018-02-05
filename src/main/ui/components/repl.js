@@ -1,9 +1,34 @@
-// @flow
+/*
+ * @flow
+ *
+ * MIT License
+ *
+ * Copyright (c) 2017 Uber Node.js
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 import React from 'react';
 import {FontAwesomeButton} from './controls';
 import {green, red} from '../ui-util';
 import {Link} from 'react-router-dom';
+import typeof TapeTest from 'tape';
 
 /* eslint-env browser */
 
@@ -37,7 +62,11 @@ export default class Repl extends React.Component<Props, State> {
     output: ''
   };
 
-  saveIframeRef = (iframe: React$ElementRef<'iframe'>) => (this.iframe = iframe);
+  saveIframeRef = (iframe: ?HTMLIFrameElement) => {
+    if (iframe) {
+      this.iframe = iframe;
+    }
+  };
 
   updateUri = ({target: {value}}: SyntheticInputEvent<HTMLInputElement>) =>
     this.setState({uri: value});
@@ -65,14 +94,15 @@ t.end();
   loaded = () => {
     const win = this.iframe.contentWindow;
     const doc = win.document;
-    const script = doc.createElement('script');
+    const script : HTMLScriptElement = doc.createElement('script');
     const actualCode = `
       test('new test', async function(t) {
         ${this.state.code}
       });`;
     script.onload = () => {
       this.setState({output: ''});
-      win.test.createStream().on('data', row => {
+      const tape : TapeTest = win.test;
+      tape.createStream().on('data', row => {
         this.setState(state => ({output: state.output + row}));
       });
       console.log('evaluating code ', actualCode);
@@ -83,7 +113,8 @@ t.end();
       }
     };
     script.src = '/_ottr/tests/.ottr-webpack/repl-bundle.js';
-    doc.getElementsByTagName('head')[0].appendChild(script);
+    const head : HTMLElement = doc.getElementsByTagName('head')[0];
+    head.appendChild(script);
   };
 
   render() {
