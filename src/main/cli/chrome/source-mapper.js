@@ -41,8 +41,20 @@ type Mapping = {|
 /**
  * @returns {boolean} true if a > b
  */
+export const greaterThanOrEqN = (aline: number, acolumn: number, bline: number, bcolumn: number) =>
+  aline > bline || (aline === bline && acolumn >= bcolumn);
+
+/**
+ * @returns {boolean} true if a > b
+ */
 export const greaterThanOrEq = (a: Loc, b: Loc) =>
-  a.line > b.line || (a.line === b.line && a.column >= b.column);
+  greaterThanOrEqN(a.line, a.column, b.line, b.column);
+
+/**
+ * @returns {boolean} true if a > b
+ */
+export const greaterThanOrEqP = (aline: number, acolumn: number, b: Loc) =>
+  greaterThanOrEqN(aline, acolumn, b.line, b.column);
 
 function getEndPosition(code): Loc {
   let line = 1;
@@ -57,6 +69,10 @@ function getEndPosition(code): Loc {
   }
   return {line, column};
 }
+
+const isBetween = (target: Loc, start: Mapping, end: Mapping) =>
+  greaterThanOrEqN(target.line, target.column, start.generatedLine, start.generatedColumn) &&
+  greaterThanOrEqN(end.generatedLine, end.generatedColumn, target.line, target.column);
 
 export class PreciseSourceMapper {
   mappings: Mapping[] = [];
@@ -127,32 +143,34 @@ export class PreciseSourceMapper {
     }
   }
 
-  originalPositionFor({line, column}: Loc) {
-    const mapping = this.findMapping({line, column});
+  originalPositionFor(generated: Loc) {
+    const mapping = this.findMapping(generated);
+    const {line, column} = generated;
     /* istanbul ignore next */ if (DEBUG) {
       console.log(`${line},${column} - using mapping`, mapping);
     }
-    let l = mapping.originalLine + (line - mapping.generatedLine);
-    let c =
-      mapping.generatedLine < line
-        ? column
-        : mapping.originalColumn + (column - mapping.generatedColumn);
     const eof = this.eof[mapping.source];
-    if (eof && greaterThanOrEq({line: l, column: c}, eof)) {
+    const result = {
+      generated,
+      source: mapping.source,
+      line: mapping.originalLine + (line - mapping.generatedLine),
+      column:
+        mapping.generatedLine < line
+          ? column
+          : mapping.originalColumn + (column - mapping.generatedColumn)
+    };
+    if (eof && greaterThanOrEq(result, eof)) {
       /* istanbul ignore next */ if (DEBUG) {
         console.log(
-          `reverting to EOF for ${mapping.source} @ ${l},${c} -> ${eof.line}, ${eof.column}`
+          `reverting to EOF for ${mapping.source} @ ${result.line},${result.column} -> ${
+            eof.line
+          }, ${eof.column}`
         );
       }
-      l = eof.line;
-      c = eof.column;
+      result.line = eof.line;
+      result.column = eof.column;
     }
-    return {
-      source: mapping.source,
-      line: l,
-      column: c,
-      generated: {line, column}
-    };
+    return result;
   }
 
   getAllSourcesBetweenGeneratedLocations(startGen: Loc, endGen: Loc) {
@@ -177,11 +195,30 @@ export class PreciseSourceMapper {
     if (generatedLoc.line < 1 || generatedLoc.column < 0) {
       throw new Error(`invalid position ${generatedLoc.line},${generatedLoc.column}`);
     }
-    for (let i = 0; i < this.mappings.length - 1; i++) {
-      const next = this.mappings[i + 1];
-      const test = {line: next.generatedLine, column: next.generatedColumn};
-      if (greaterThanOrEq(test, generatedLoc)) {
-        return this.mappings[i];
+    let minIndex = 0;
+    let maxIndex = this.mappings.length - 1;
+
+    // Defensive programming - avoid infinite loop in case of bug :)
+    for (let counter = 0; minIndex <= maxIndex && counter < 1000; counter++) {
+      if (counter === 999) {
+        throw new Error(`inf loop finding mapping for ${generatedLoc.line},${generatedLoc.column}`);
+      }
+      const currentIndex = ((minIndex + maxIndex) / 2) | 0;
+      const currentElement = this.mappings[currentIndex];
+
+      if (
+        currentIndex + 1 < this.mappings.length &&
+        isBetween(generatedLoc, this.mappings[currentIndex], this.mappings[currentIndex + 1])
+      ) {
+        return currentElement;
+      }
+
+      if (
+        greaterThanOrEqP(currentElement.generatedLine, currentElement.generatedColumn, generatedLoc)
+      ) {
+        maxIndex = currentIndex - 1;
+      } else {
+        minIndex = currentIndex + 1;
       }
     }
     return this.mappings[this.mappings.length - 1];
