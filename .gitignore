@@ -5,3 +5,5 @@
 /coverage
 /.nyc_output
 npm-debug.log
+# node profiler
+isolate-*.log

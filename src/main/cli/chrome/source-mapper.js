@@ -76,13 +76,24 @@ const isBetween = (target: Loc, start: Mapping, end: Mapping) =>
 
 export class PreciseSourceMapper {
   mappings: Mapping[] = [];
+  mappingsBySource: {[string]: Mapping[]} = {};
   generatedCodeLines: (?string)[];
   eof: {[string]: Loc} = {};
 
   constructor(generatedCode: string, mapJson: Object) {
     this.generatedCodeLines = [null, ...generatedCode.split('\n')];
     const sourceMap = new SourceMapConsumer(mapJson);
-    sourceMap.eachMapping(m => this.mappings.push(m), null);
+    sourceMap.eachMapping(m => {
+      this.mappings.push(m);
+      if (m.source) {
+        const mappings = this.mappingsBySource[m.source];
+        if (!mappings) {
+          this.mappingsBySource[m.source] = [m];
+        } else {
+          mappings.push(m);
+        }
+      }
+    }, null);
     /* istanbul ignore next */ if (DEBUG) {
       this.mappings.forEach(m => console.log(m));
     }
@@ -174,17 +185,22 @@ export class PreciseSourceMapper {
   }
 
   getAllSourcesBetweenGeneratedLocations(startGen: Loc, endGen: Loc) {
-    const sources = {};
-    for (const m of this.mappings) {
-      const gen = {line: m.generatedLine, column: m.generatedColumn};
-      if (m.source && greaterThanOrEq(gen, startGen) && greaterThanOrEq(endGen, gen)) {
-        sources[m.source] = true;
+    const sources = [];
+    for (const source in this.mappingsBySource) {
+      for (const m of this.mappingsBySource[source]) {
+        if (
+          greaterThanOrEqN(m.generatedLine, m.generatedColumn, startGen.line, endGen.line) &&
+          greaterThanOrEqN(endGen.line, endGen.column, m.generatedLine, m.generatedColumn)
+        ) {
+          sources.push(source);
+          break;
+        }
       }
     }
     /* istanbul ignore next */ if (DEBUG) {
-      console.log(startGen, endGen, Object.keys(sources));
+      console.log(startGen, endGen, sources);
     }
-    return Object.keys(sources);
+    return sources;
   }
 
   eofForSource(source: string) {

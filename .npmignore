@@ -17,3 +17,5 @@ lib/static/css/
 .eslintrc
 .flowconfig
 uber-ottr-*.tgz
+# node profiler
+isolate-*.log
