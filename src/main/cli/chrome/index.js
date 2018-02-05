@@ -62,7 +62,9 @@ export class ChromeRunner {
     if (this.captureCoverage) {
       console.log('[ottr] downloading and converting coverage data from Chrome...');
       const page = await this.startupCompletePromise;
+      console.log('[ottr] - downloading');
       const chromeCoverage = await page.coverage.stopJSCoverage();
+      console.log(chromeCoverage.map(x => x.url))
       const istanbulCoverage = await chromeCoverageToIstanbulJson(chromeCoverage);
       const map = libCoverage.createCoverageMap(global.__coverage__);
       map.merge(istanbulCoverage);
@@ -71,6 +73,7 @@ export class ChromeRunner {
       // copies of 'istanbul-lib-coverage' in node_modules (which for some reason we do), you need
       // to convert to JSON here.
       global.__coverage__ = JSON.parse(JSON.stringify(map));
+      Object.keys(global.__coverage__).forEach(x => console.log(x));
     }
     await this.browser.close();
   }

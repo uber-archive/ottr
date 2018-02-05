@@ -73,6 +73,10 @@ export const startDummyServer = async (dirOrig: string = '', launchedCallback: (
   const dir = dirOrig.length > 0 ? fs.realpathSync(dirOrig) : dirOrig;
   const port = await getPort();
   const app = express();
+  app.get('/', (req: express$Request, res: express$Response) => {
+    console.log(`[dummy] server got request for ${req.url}`);
+    res.send('ok');
+  });
   app.get('/home', (req: express$Request, res: express$Response) => {
     console.log(`[dummy] server got request for ${req.url}`);
     res.send('<script src=frontend.js></script>');

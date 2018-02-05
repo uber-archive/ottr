@@ -78,7 +78,7 @@ function urlToPath(u) {
 }
 
 const fixWebpackPath = u =>
-  u.match(/^webpack:/) ? path.resolve(urlToPath(u).replace(/^\/+/, '')) : urlToPath(u);
+  path.resolve(u.match(/^webpack:/) ? urlToPath(u).replace(/^\/+/, '') : urlToPath(u));
 
 async function createSourceMap(f): Promise<?PreciseSourceMapper> {
   try {
@@ -225,21 +225,30 @@ function getSourceMappedOffsets(f, sourceMap: ?PreciseSourceMapper, tracker) {
   return offsetsByPath;
 }
 
-export async function chromeCoverageToIstanbulJson(chromeCov: ChromeCoverageFileReport[], inferNonCovered: boolean = true, ensureAllLinesMapped: boolean = true) {
+export async function chromeCoverageToIstanbulJson(
+  chromeCov: ChromeCoverageFileReport[],
+  inferNonCovered: boolean = true,
+  ensureAllLinesMapped: boolean = true
+) {
   const istanbulCov = {};
   for (const f of chromeCov) {
+    console.log(`[ottr] ${f.url} - parsing`);
     const tracker = new Tracker(f.text);
     const sourceMap = await createSourceMap(f);
 
+    console.log(`[ottr] ${f.url} - source mapping`);
     const offsetsByPath = getSourceMappedOffsets(f, sourceMap, tracker);
 
     if (inferNonCovered) {
+      console.log(`[ottr] ${f.url} - marking non-covered regions`);
       inferNonCoveredRegions(sourceMap, offsetsByPath);
     }
     if (ensureAllLinesMapped) {
+      console.log(`[ottr] ${f.url} - remapping multi-line regions`);
       interpolateLinesWithoutSourceMaps(offsetsByPath);
     }
 
+    console.log(`[ottr] ${f.url} - converting to Istanbul format`);
     for (const p in offsetsByPath) {
       const statementMap = {};
       const s = {};

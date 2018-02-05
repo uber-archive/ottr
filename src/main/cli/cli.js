@@ -24,21 +24,25 @@
  */
 
 /* eslint-disable no-process-exit,node/shebang,no-unreachable */
+
 // @flow
 
 import 'source-map-support/register';
-
 import 'babel-polyfill';
 
 import fs from 'fs';
 import {packageForBrowser} from './packager';
 import path from 'path';
+import url from 'url';
 import {logEachLine} from '../util';
 import commander from 'commander';
 import {ChromeRunner, runChrome} from './chrome';
 import {spawn} from 'child_process';
 import {createSession, DEFAULT_ERROR, getSessions} from './server/sessions';
 import {startOttrServer} from './server';
+import fetch from 'node-fetch';
+
+const DEFAULT_SERVER_STARTUP_TIMEOUT_SECS = 30;
 
 const run = (title, cmd, options) =>
   new Promise((resolve, reject) => {
@@ -49,6 +53,32 @@ const run = (title, cmd, options) =>
   });
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const serverOnline = async (u, timeoutMs) => {
+  let alreadyLogged = false;
+  const start = Date.now();
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const response = await fetch(u, {method: 'HEAD'});
+      if (!response.ok) {
+        throw new Error(
+          `HTTP HEAD ${u} - server returned ${response.status} ${response.statusText}`
+        );
+      }
+      return;
+    } catch (e) {
+      if (!alreadyLogged) {
+        alreadyLogged = true;
+        console.log(`[ottr] waiting for server startup (${u})`);
+      }
+      if (Date.now() - start >= timeoutMs) {
+        throw e;
+      }
+      await sleep(250);
+    }
+  }
+};
 
 class Ottr {
   command;
@@ -90,17 +120,21 @@ class Ottr {
     if (this.command.server) {
       console.log(`[ottr] starting server ${this.command.server}`);
       run('ottr:server', this.command.server, {shell: true}).catch(this.exit);
-      // TODO: wait for server to be up. maybe request /health?
     }
 
     await packageForBrowser(testFileOrig);
 
     const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
-    const url = await startOttrServer(targetUrl);
+    const ottrUrl = await startOttrServer(targetUrl);
+
+    await serverOnline(
+      url.resolve(targetUrl, this.command.waitPath || ''),
+      1000 * (this.command.waitTimeout || DEFAULT_SERVER_STARTUP_TIMEOUT_SECS)
+    );
 
     const useChrome = this.command.chrome || this.command.chromium;
     if (useChrome) {
-      const sessionUrl = `${url}/session/${createSession()}`;
+      const sessionUrl = `${ottrUrl}/session/${createSession()}`;
       console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
       // TODO: only import puppeteer if user wants this feature
       this.chrome = new ChromeRunner(
@@ -176,6 +210,8 @@ const args = commander
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
   .option('--coverage <type>', "use 'chrome' for code coverage from Chrome DevTools (see below)")
+  .option('--wait-timeout <secs>', 'max server startup wait time (see --wait-path)', parseInt)
+  .option('--wait-path <path>', 'wait for your server to return 200 for this path (e.g., /health)')
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')
   .option('-i, --inspect', 'runs Chrome in GUI mode so you can watch tests run interactively')
   .on('--help', () =>

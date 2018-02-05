@@ -33,6 +33,8 @@ import tmp from 'tmp';
 // TODO: test mix of Istanbul coverage and Chrome coverage
 // TODO: test server coverage
 
+const ALWAYS_PASSES = `require('ottr').test('always passes', '/home', function(t) { t.end(); });`;
+
 test('success - Chrome + server + imports', async t => {
   let launched = false;
   const server = await startDummyServer('', () => (launched = true));
@@ -99,10 +101,7 @@ test('fails when webpack sees missing dependency', async t => {
     await runOttr(`localhost:${port} test.js`, {
       'test.js': `
         var dep = require('./dep'); 
-        var ottr = require('ottr');
-        ottr.test('this is gonna fail', '/home', function(t) {
-          t.end();
-        });
+        ${ALWAYS_PASSES}
     `,
       'server.sh': `
         #!/bin/sh
@@ -181,8 +180,7 @@ test('fails when server startup fails', async t => {
   const port = server.address().port;
   try {
     await runOttr(`--server server.sh localhost:${port} test.js`, {
-      'test.js': `
-        require('ottr').test('homepage works', '/home', function(t) { t.end(); });`,
+      'test.js': ALWAYS_PASSES,
       'server.sh': `
         #!/bin/sh
         exit 1`
@@ -190,6 +188,36 @@ test('fails when server startup fails', async t => {
     t.fail('ottr should not have succeeded');
   } catch (e) {
     t.equal(e, 127, 'ottr should fail');
+  }
+  server.close();
+  t.end();
+});
+
+test('fails when server not online', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  server.close();
+  try {
+    await runOttr(`--wait-timeout 1 localhost:${port} test.js`, {
+      'test.js': ALWAYS_PASSES
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(e, 1, 'ottr should fail');
+  }
+  t.end();
+});
+
+test('fails when wait path 404', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  try {
+    await runOttr(`--wait-timeout 1 --wait-path /xyz localhost:${port} test.js`, {
+      'test.js': ALWAYS_PASSES
+    });
+    t.fail('ottr should not have succeeded');
+  } catch (e) {
+    t.equal(e, 1, 'ottr should fail');
   }
   server.close();
   t.end();
