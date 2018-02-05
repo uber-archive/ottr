@@ -64,7 +64,7 @@ export class ChromeRunner {
       const page = await this.startupCompletePromise;
       console.log('[ottr] - downloading');
       const chromeCoverage = await page.coverage.stopJSCoverage();
-      console.log(chromeCoverage.map(x => x.url))
+      console.log(chromeCoverage.map(x => x.url));
       const istanbulCoverage = await chromeCoverageToIstanbulJson(chromeCoverage);
       const map = libCoverage.createCoverageMap(global.__coverage__);
       map.merge(istanbulCoverage);

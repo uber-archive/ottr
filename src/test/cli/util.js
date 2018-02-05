@@ -69,7 +69,10 @@ export const FRONTEND_JS = `
   }
   covered();`;
 
-export const startDummyServer = async (dirOrig: string = '', launchedCallback: () => any = noop) => {
+export const startDummyServer = async (
+  dirOrig: string = '',
+  launchedCallback: () => any = noop
+) => {
   const dir = dirOrig.length > 0 ? fs.realpathSync(dirOrig) : dirOrig;
   const port = await getPort();
   const app = express();
