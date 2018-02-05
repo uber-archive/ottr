@@ -197,7 +197,7 @@ function getSourceMappedOffsets(f, sourceMap: ?PreciseSourceMapper, tracker) {
       return chromeLineCol;
     }
     const originalLineCol = sourceMap.originalPositionFor(chromeLineCol);
-    if (DEBUG) {
+    /* istanbul ignore next */ if (DEBUG) {
       console.log(offset, '->', chromeLineCol, '=>', originalLineCol);
     }
     return originalLineCol;
@@ -263,7 +263,7 @@ export async function chromeCoverageToIstanbulJson(
       istanbulCov[p] = {path: p, statementMap, s, branchMap: {}, b: {}, fnMap: {}, f: {}};
     }
   }
-  if (DEBUG) {
+  /* istanbul ignore next */ if (DEBUG) {
     fs.writeFileSync('chrome.json', JSON.stringify(chromeCov));
     fs.writeFileSync('istanbul.json', JSON.stringify(istanbulCov));
     console.log('ISTANBUL', Object.keys(istanbulCov));

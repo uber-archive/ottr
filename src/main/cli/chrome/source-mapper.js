@@ -67,12 +67,12 @@ export class PreciseSourceMapper {
     this.generatedCodeLines = [null, ...generatedCode.split('\n')];
     const sourceMap = new SourceMapConsumer(mapJson);
     sourceMap.eachMapping(m => this.mappings.push(m), null);
-    if (DEBUG) {
+    /* istanbul ignore next */ if (DEBUG) {
       this.mappings.forEach(m => console.log(m));
     }
     this.calculateEofs();
     this.checkSourcesForEofs(sourceMap);
-    if (DEBUG) {
+    /* istanbul ignore next */ if (DEBUG) {
       console.log('EOFs', this.eof);
     }
   }
@@ -113,7 +113,7 @@ export class PreciseSourceMapper {
       }
       const end = getEndPosition(originalCode);
       if (greaterThanOrEq(end, this.eof[source])) {
-        if (DEBUG) {
+        /* istanbul ignore next */ if (DEBUG) {
           console.log(
             `source map did not include end position for ${source} - increased eof from `,
             this.eof[source],
@@ -129,7 +129,7 @@ export class PreciseSourceMapper {
 
   originalPositionFor({line, column}: Loc) {
     const mapping = this.findMapping({line, column});
-    if (DEBUG) {
+    /* istanbul ignore next */ if (DEBUG) {
       console.log(`${line},${column} - using mapping`, mapping);
     }
     let l = mapping.originalLine + (line - mapping.generatedLine);
@@ -139,7 +139,7 @@ export class PreciseSourceMapper {
         : mapping.originalColumn + (column - mapping.generatedColumn);
     const eof = this.eof[mapping.source];
     if (eof && greaterThanOrEq({line: l, column: c}, eof)) {
-      if (DEBUG) {
+      /* istanbul ignore next */ if (DEBUG) {
         console.log(
           `reverting to EOF for ${mapping.source} @ ${l},${c} -> ${eof.line}, ${eof.column}`
         );
@@ -163,7 +163,7 @@ export class PreciseSourceMapper {
         sources[m.source] = true;
       }
     }
-    if (DEBUG) {
+    /* istanbul ignore next */ if (DEBUG) {
       console.log(startGen, endGen, Object.keys(sources));
     }
     return Object.keys(sources);
