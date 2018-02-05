@@ -57,6 +57,7 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const serverOnline = async (u, timeoutMs) => {
   let alreadyLogged = false;
   const start = Date.now();
+  let nextTimeoutMs = 250;
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
@@ -75,7 +76,8 @@ const serverOnline = async (u, timeoutMs) => {
       if (Date.now() - start >= timeoutMs) {
         throw e;
       }
-      await sleep(250);
+      await sleep(nextTimeoutMs);
+      nextTimeoutMs = Math.min(5000, nextTimeoutMs * 2);
     }
   }
 };
