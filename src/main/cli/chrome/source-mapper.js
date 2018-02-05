@@ -28,7 +28,7 @@ import {SourceMapConsumer} from 'source-map';
 
 export const DEBUG = false;
 
-type Loc = {line: number, column: number};
+export type Loc = {line: number, column: number};
 
 type Mapping = {|
   source: string,
@@ -37,6 +37,9 @@ type Mapping = {|
   originalLine: number,
   originalColumn: number
 |};
+
+
+export const locsEqual = (a : Loc, b : Loc) => a.line === b.line && a.column === b.column;
 
 /**
  * @returns {boolean} true if a > b
@@ -104,7 +107,7 @@ export class PreciseSourceMapper {
     }
   }
 
-  getEof(source: string) {
+  getEof(source: string): ?Loc {
     return this.eof[source];
   }
 

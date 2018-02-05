@@ -1,5 +1,6 @@
 .idea/
 coverage/
+/flow-coverage
 dist-test/
 .nyc_output/
 flow-typed/

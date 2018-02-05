@@ -29,18 +29,23 @@ import url from 'url';
 import fs from 'fs';
 import {resolveSourceMap} from 'source-map-resolve';
 import promisify from 'util.promisify';
-import {DEBUG, greaterThanOrEq, PreciseSourceMapper} from './source-mapper';
+import {DEBUG, greaterThanOrEq, locsEqual, PreciseSourceMapper} from './source-mapper';
+import type {Loc} from './source-mapper';
 
-type Range = {|
+type ChromeRegion = {|
   start: number,
   end: number
 |};
 
 type ChromeCoverageFileReport = {|
   url: string,
-  ranges: Range[],
+  ranges: ChromeRegion[],
   text: string
 |};
+
+type IntermediateRegion = {start: Loc, end: Loc, source: string, covered: boolean};
+
+type IntermediateRegionsByPath = {[string]: IntermediateRegion[]};
 
 class Tracker {
   text: string;
@@ -107,18 +112,23 @@ function pushAll(sourceMap, start, end, push) {
   }
 }
 
-function inferNonCoveredRegions(sourceMap, offsetsByPath) {
+function inferNonCoveredRegions(sourceMap, offsetsByPath: IntermediateRegionsByPath) {
   for (const p in offsetsByPath) {
     const offsets = offsetsByPath[p];
     if (!offsets.length) {
       continue;
     }
-    offsets.sort((a, b) => a.start - b.start);
+    offsets.sort(
+      (a, b) => (locsEqual(a.start, b.start) ? 0 : greaterThanOrEq(a.start, b.start) ? 1 : -1)
+    );
     let source = null;
     let line = 1;
     let column = 0;
     for (let i = 0; i < offsets.length; i++) {
       source = source || offsets[i].source;
+      if (!source) {
+        continue;
+      }
       const offset = offsets[i];
       if (line !== offset.start.line || column !== offset.start.column) {
         offsets.splice(i, 0, {
@@ -134,6 +144,7 @@ function inferNonCoveredRegions(sourceMap, offsetsByPath) {
     }
     const eof = sourceMap && source ? sourceMap.getEof(source) : null;
     if (
+      source &&
       eof &&
       greaterThanOrEq(eof, {line, column}) &&
       !(line === eof.line && column === eof.column)
@@ -187,9 +198,13 @@ function interpolateLinesWithoutSourceMaps(offsetsByPath) {
   }
 }
 
-function getSourceMappedOffsets(f, sourceMap: ?PreciseSourceMapper, tracker) {
+function getSourceMappedOffsets(
+  f: ChromeCoverageFileReport,
+  sourceMap: ?PreciseSourceMapper,
+  tracker
+): IntermediateRegionsByPath {
   const pathFromUrl = urlToPath(f.url);
-  const offsetsByPath = {};
+  const offsetsByPath: IntermediateRegionsByPath = {};
 
   const offsetToLineCol = offset => {
     const chromeLineCol = tracker.get(offset);
@@ -225,19 +240,24 @@ function getSourceMappedOffsets(f, sourceMap: ?PreciseSourceMapper, tracker) {
   return offsetsByPath;
 }
 
+function mergeCoverageRecordsForIframes(chromeCov): ChromeCoverageFileReport[] {
+  // TODO: implement
+  return chromeCov;
+}
+
 export async function chromeCoverageToIstanbulJson(
   chromeCov: ChromeCoverageFileReport[],
   inferNonCovered: boolean = true,
   ensureAllLinesMapped: boolean = true
 ) {
   const istanbulCov = {};
-  for (const f of chromeCov) {
+  for (const f of mergeCoverageRecordsForIframes(chromeCov)) {
     console.log(`[ottr] ${f.url} - parsing`);
     const tracker = new Tracker(f.text);
     const sourceMap = await createSourceMap(f);
 
     console.log(`[ottr] ${f.url} - source mapping`);
-    const offsetsByPath = getSourceMappedOffsets(f, sourceMap, tracker);
+    const offsetsByPath: IntermediateRegionsByPath = getSourceMappedOffsets(f, sourceMap, tracker);
 
     if (inferNonCovered) {
       console.log(`[ottr] ${f.url} - marking non-covered regions`);
