@@ -32,7 +32,7 @@ import promisify from 'util.promisify';
 import {DEBUG, greaterThanOrEq, locsEqual, PreciseSourceMapper} from './source-mapper';
 import type {Loc} from './source-mapper';
 
-type ChromeRegion = {|
+export type ChromeRegion = {|
   start: number,
   end: number
 |};
@@ -59,7 +59,7 @@ class Tracker {
 
   get(nextOffset: number) {
     if (nextOffset < this.offset) {
-      throw new Error('cannot rewind line/column tracker');
+      throw new Error(`cannot rewind line/column tracker to ${nextOffset} (was at ${this.offset})`);
     }
     for (; this.offset < nextOffset && this.offset < this.text.length; this.offset++) {
       if (this.text[this.offset] === '\n') {
@@ -226,23 +226,95 @@ function getSourceMappedOffsets(
     offsetsByPath[p].push({start, end, source, covered});
   }
 
+  let logged = false;
   for (const offset of f.ranges) {
-    const start = offsetToLineCol(offset.start);
-    const end = offsetToLineCol(offset.end);
-    if (sourceMap) {
-      if (start.source && end.source) {
-        pushAll(sourceMap, start, end, push);
+    try {
+      const start = offsetToLineCol(offset.start);
+      const end = offsetToLineCol(offset.end);
+      if (sourceMap) {
+        if (start.source && end.source) {
+          pushAll(sourceMap, start, end, push);
+        }
+      } else {
+        push(pathFromUrl, start, end, true);
       }
-    } else {
-      push(pathFromUrl, start, end, true);
+    } catch (e) {
+      if (!logged) {
+        logged = true;
+        console.error(`error source mapping ${f.url}`, e);
+      }
     }
   }
   return offsetsByPath;
 }
 
+const containsEntirely = (big, small) => big.start <= small.start && big.end >= small.end;
+
+const intersectsOrAdjacent = (a, b) => b.start <= a.end && a.start <= b.end;
+
+export function merge(target: ChromeRegion[], source: ChromeRegion[]) {
+  let ti = 0;
+  for (const toInsert of source) {
+    while (ti < target.length && target[ti].end < toInsert.start) {
+      ti++;
+    }
+    while (ti < target.length && containsEntirely(toInsert, target[ti])) {
+      target.splice(ti, 1);
+    }
+    const tcurrent = target[ti];
+    if (!tcurrent) {
+      target.push(toInsert);
+    } else if (!containsEntirely(tcurrent, toInsert)) {
+      if (intersectsOrAdjacent(tcurrent, toInsert)) {
+        tcurrent.start = Math.min(tcurrent.start, toInsert.start);
+        tcurrent.end = Math.max(tcurrent.end, toInsert.end);
+        while (ti < target.length - 1 && intersectsOrAdjacent(tcurrent, target[ti + 1])) {
+          tcurrent.start = Math.min(tcurrent.start, target[ti + 1].start);
+          tcurrent.end = Math.max(tcurrent.end, target[ti + 1].end);
+          target.splice(ti + 1, 1);
+        }
+      } else if (toInsert.start < tcurrent.start) {
+        target.splice(ti, 0, toInsert);
+      }
+      // else condition is not possible
+    }
+  }
+}
+
+function sortAndMergeOverlaps(ranges: ChromeRegion[]) {
+  ranges.sort((a, b) => a.start - b.start);
+  for (let i = 1; i < ranges.length; i++) {
+    const prev = ranges[i - 1];
+    const cur = ranges[i];
+    if (prev.end >= cur.start) {
+      console.warn('[ottr] Chrome coverage includes overlapping source regions... merging!');
+      prev.start = Math.min(prev.start, cur.start);
+      prev.end = Math.max(prev.end, cur.end);
+      ranges.splice(i, 1);
+      i--;
+    }
+  }
+}
+
 function mergeCoverageRecordsForIframes(chromeCov): ChromeCoverageFileReport[] {
-  // TODO: implement
-  return chromeCov;
+  const byUrl = {};
+  const extras = [];
+  for (const f of chromeCov) {
+    sortAndMergeOverlaps(f.ranges);
+    const merged = byUrl[f.url];
+    if (!merged) {
+      byUrl[f.url] = f;
+    } else if (f.text === merged.text) {
+      console.warn(`[ottr] merging multiple iframe source maps for ${f.url}`);
+      merge(merged.ranges, f.ranges);
+    } else {
+      console.warn(
+        `[ottr] yuck, Chrome gave us multiple source maps that don't match for ${f.url}`
+      );
+      extras.push(f);
+    }
+  }
+  return [...Object.keys(byUrl).map(k => byUrl[k]), ...extras];
 }
 
 export async function chromeCoverageToIstanbulJson(
@@ -264,7 +336,7 @@ export async function chromeCoverageToIstanbulJson(
       inferNonCoveredRegions(sourceMap, offsetsByPath);
     }
     if (ensureAllLinesMapped) {
-      console.log(`[ottr] ${f.url} - remapping multi-line regions`);
+      console.log(`[ottr] ${f.url} - splitting multi-line regions`);
       interpolateLinesWithoutSourceMaps(offsetsByPath);
     }
 

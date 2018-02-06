@@ -30,6 +30,6 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import 'rxjs';
 import App from './app';
-import {nonnull} from "../util";
+import {nonnull} from '../util';
 
 ReactDOM.render(<App />, nonnull(document.getElementById('ottr-app')));

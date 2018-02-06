@@ -27,7 +27,7 @@
 import io from 'socket.io';
 import {getOrCreateSession, getOrCreateTest, sessions} from './sessions';
 // eslint-disable-next-line no-unused-vars
-import type {Test} from "../../types";
+import type {Test} from '../../types';
 
 export const setupEndpoints = (app: express$Application) =>
   app.get(`${'/_ottr/api'}/session/:id`, (req: express$Request, res: express$Response) => {
@@ -46,9 +46,9 @@ const convertConsoleLogArgsToString = args => args.map(toString).join('');
 
 // https://github.com/facebook/flow/issues/1295
 declare class OttrSocket {
-  on(name: 'console', fn: (string[]) => any): void,
-  on(name: 'tests', fn: ([string, string, {string: Test}]) => any): void,
-  on(name: 'done', fn: ([string, string]) => any): void,
+  on(name: 'console', fn: (string[]) => any): void;
+  on(name: 'tests', fn: ([string, string, {string: Test}]) => any): void;
+  on(name: 'done', fn: ([string, string]) => any): void;
   on(name: 'fail', fn: ([string, string, string]) => any): void;
 }
 

@@ -38,8 +38,7 @@ type Mapping = {|
   originalColumn: number
 |};
 
-
-export const locsEqual = (a : Loc, b : Loc) => a.line === b.line && a.column === b.column;
+export const locsEqual = (a: Loc, b: Loc) => a.line === b.line && a.column === b.column;
 
 /**
  * @returns {boolean} true if a > b

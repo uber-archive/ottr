@@ -27,8 +27,8 @@
 /* eslint-env browser */
 
 function getQueryVariable(name) {
-  const query:string = window.location.search.substring(1);
-  const vars:string[] = query.split('&');
+  const query: string = window.location.search.substring(1);
+  const vars: string[] = query.split('&');
   for (const part of vars) {
     const [key, value] = part.split('=');
     if (decodeURIComponent(key) === name) {

@@ -94,14 +94,14 @@ t.end();
   loaded = () => {
     const win = this.iframe.contentWindow;
     const doc = win.document;
-    const script : HTMLScriptElement = doc.createElement('script');
+    const script: HTMLScriptElement = doc.createElement('script');
     const actualCode = `
       test('new test', async function(t) {
         ${this.state.code}
       });`;
     script.onload = () => {
       this.setState({output: ''});
-      const tape : TapeTest = win.test;
+      const tape: TapeTest = win.test;
       tape.createStream().on('data', row => {
         this.setState(state => ({output: state.output + row}));
       });
@@ -113,7 +113,7 @@ t.end();
       }
     };
     script.src = '/_ottr/tests/.ottr-webpack/repl-bundle.js';
-    const head : HTMLElement = doc.getElementsByTagName('head')[0];
+    const head: HTMLElement = doc.getElementsByTagName('head')[0];
     head.appendChild(script);
   };
 
