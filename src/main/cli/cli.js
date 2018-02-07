@@ -33,7 +33,7 @@ import fs from 'fs';
 import {packageForBrowser} from './packager';
 import path from 'path';
 import url from 'url';
-import {logEachLine, nonnull} from '../util';
+import {logEachLine, nonnull, sleep} from '../util';
 import {Command} from 'commander';
 import {ChromeRunner, runChrome} from './chrome';
 import {spawn} from 'child_process';
@@ -50,8 +50,6 @@ const run = (title: string, cmd: string, options) =>
     child.stderr.on('data', data => logEachLine(`!${title}!`, data));
     child.on('exit', code => (code === 0 ? resolve() : reject(code)));
   });
-
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const serverOnline = async (u, timeoutMs) => {
   let alreadyLogged = false;
@@ -88,6 +86,7 @@ type OttrCommand = Command & {
   inspect?: boolean,
   chrome?: boolean,
   debug?: boolean,
+  screenshots?: boolean,
   chromium?: string,
   coverage?: string
 };
@@ -147,15 +146,18 @@ class Ottr {
     const useChrome = this.command.chrome || this.command.chromium;
     let guiUrl = ottrUrl;
     if (useChrome) {
-      guiUrl = `${ottrUrl}/session/${createSession()}`;
+      const sessionId = createSession();
+      guiUrl = `${ottrUrl}/session/${sessionId}`;
       console.log(`[ottr] starting Chrome => ${guiUrl}`);
       // TODO: only import puppeteer NPM package if user wants this feature
       this.chrome = new ChromeRunner(
         this.exit,
         guiUrl,
+        sessionId,
         !this.command.inspect,
         this.command.coverage === 'chrome',
-        this.command.chromium
+        this.command.chromium,
+        this.command.screenshots ? 100 : null
       );
     } else {
       console.log(`[ottr] you did not specify '--chrome', so you must run tests manually`);
@@ -246,6 +248,7 @@ const args = new Command()
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
   .option('--coverage <type>', "use 'chrome' for code coverage from Chrome DevTools (see below)")
+  .option('--screenshots', 'take screenshots every 100ms')
   .option('--wait-timeout <secs>', 'max server startup wait time (see --wait-path)', parseInt)
   .option('--wait-path <path>', 'wait for your server to return 200 for this path (e.g., /health)')
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')

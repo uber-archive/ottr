@@ -28,37 +28,53 @@ import puppeteer from 'puppeteer';
 import {logEachLine} from '../../util';
 import libCoverage from 'istanbul-lib-coverage';
 import {chromeCoverageToIstanbulJson} from './coverage';
+import {ScreenshotSequenceCapturer} from './screenshots';
 
 export class ChromeRunner {
   startupCompletePromise: Promise<*>;
   captureCoverage: boolean;
   browser: puppeteer.Browser;
+  page: puppeteer.Page;
+  screenshots: ?ScreenshotSequenceCapturer;
 
+  // eslint-disable-next-line max-params
   constructor(
     exit: number => any,
     url: string,
+    sessionId: string,
     headless: boolean,
     coverage: boolean,
-    chromeBinary?: string
+    chromeBinary: ?string,
+    screenshotIntervalMs: ?number
   ) {
-    this.captureCoverage = coverage;
     this.startupCompletePromise = (async () => {
+      this.captureCoverage = coverage;
       this.browser = await puppeteer.launch({
         devtools: !headless,
         executablePath: chromeBinary || undefined
       });
-      const page = await this.browser.newPage();
+      this.page = await this.browser.newPage();
       if (coverage) {
-        await page.coverage.startJSCoverage({resetOnNavigation: false});
+        await this.page.coverage.startJSCoverage({resetOnNavigation: false});
       }
-      page.on('console', msg => logEachLine(`[ottr:chrome]`, msg.text()));
-      page.goto(url, {timeout: 0}).catch(e => console.error(e));
-      return page;
+      this.page.on('console', msg => logEachLine(`[ottr:chrome]`, msg.text()));
+      if (screenshotIntervalMs) {
+        this.screenshots = new ScreenshotSequenceCapturer(
+          this.page,
+          sessionId,
+          screenshotIntervalMs
+        );
+      }
+      this.page.goto(url, {timeout: 0}).catch(e => console.error(e));
+      return this.page;
     })();
     this.startupCompletePromise.catch(exit);
   }
 
   async finish() {
+    if (this.screenshots) {
+      await this.screenshots.finish();
+    }
     if (this.captureCoverage) {
       console.log('[ottr] downloading and converting coverage data from Chrome...');
       const page = await this.startupCompletePromise;

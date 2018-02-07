@@ -60,6 +60,30 @@ test('success - Chrome + server + imports', async t => {
   t.end();
 });
 
+test('success - Chrome screenshots', async t => {
+  const server = await startDummyServer();
+  const port = server.address().port;
+  const {dir} = await runOttr(`--chrome --screenshots localhost:${port} test.js`, {
+    'test.js': `
+        var ottr = require('ottr');
+        ottr.test('homepage works', '/home', function(t) {
+          setTimeout(t.end, 5000);
+          t.equal(window.location.pathname, '/home');
+          t.true(window.ottrServerWorks);
+        });`
+  });
+  const sessionsDir = path.resolve(dir, 'ottr/sessions');
+  const sessionDir = path.resolve(sessionsDir, fs.readdirSync(sessionsDir)[0]);
+  const ssDir = path.resolve(sessionDir, 'screenshots');
+  const screenshots = fs.readdirSync(ssDir);
+  if (screenshots.length < 5) {
+    t.fail(`expected at least 5 screenshots in ${ssDir} but got ${screenshots.length}`);
+    console.error(screenshots);
+  }
+  server.close();
+  t.end();
+});
+
 test('success - Chrome + coverage', async t => {
   const {name: dir} = tmp.dirSync();
   const server = await startDummyServer(dir);

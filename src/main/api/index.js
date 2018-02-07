@@ -32,6 +32,8 @@ import {currentTestName, currentTestSession, isMainTestRunner} from './session';
 import {done, emitEvent} from './socket';
 import {once} from '../util';
 
+export {sleep} from '../util';
+
 const ottrTests = {};
 
 const TEST_DEFINITIONS_TIMEOUT_MS = 5000;
@@ -49,9 +51,7 @@ const submitTestsToServer = (force = false) => {
     return;
   }
   submittedTestsToServer = true;
-  console.log(
-      `[ottr] [${currentTestSession || '?'}] submitting ${numberOfTests} tests to server`
-  );
+  console.log(`[ottr] [${currentTestSession || '?'}] submitting ${numberOfTests} tests to server`);
   emitEvent('tests', ottrTests);
 };
 const maybeSubmitTestsToServer = (...args) => submitTestsToServer();
@@ -115,5 +115,3 @@ export function setValue(input: HTMLInputElement, value: string) {
   }
   input.dispatchEvent(event);
 }
-
-export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));

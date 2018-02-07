@@ -73,3 +73,5 @@ export function nonnull<T: Object | string | number | Array<any>>(value?: ?T): T
   }
   return value;
 }
+
+export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
