@@ -145,31 +145,55 @@ class Ottr {
     );
 
     const useChrome = this.command.chrome || this.command.chromium;
+    let guiUrl = ottrUrl;
     if (useChrome) {
-      const sessionUrl = `${ottrUrl}/session/${createSession()}`;
-      console.log(`[ottr] starting Chrome headless => ${sessionUrl}`);
-      // TODO: only import puppeteer if user wants this feature
+      guiUrl = `${ottrUrl}/session/${createSession()}`;
+      console.log(`[ottr] starting Chrome => ${guiUrl}`);
+      // TODO: only import puppeteer NPM package if user wants this feature
       this.chrome = new ChromeRunner(
         this.exit,
-        sessionUrl,
+        guiUrl,
         !this.command.inspect,
         this.command.coverage === 'chrome',
         this.command.chromium
       );
+    } else {
+      console.log(`[ottr] you did not specify '--chrome', so you must run tests manually`);
+      console.log(`[ottr] please visit ${ottrUrl} in the browser(s) of your choice`);
     }
 
-    if (!this.command.debug) {
-      this.exitWhenAllSessionsComplete().catch(this.exit);
+    await this.waitForCompletion(guiUrl);
+  }
+
+  async waitForCompletion(guiUrl) {
+    try {
+      await this.allSessionsComplete();
+      if (this.command.debug) {
+        console.log(`[ottr] keeping ottr open because you passed '--debug'`);
+        console.log(`[ottr] please open ${guiUrl}`);
+      } else {
+        await this.exit(0);
+      }
+    } catch (e) {
+      if (this.command.debug) {
+        console.log(`[ottr] keeping ottr open because you passed '--debug'`);
+        console.log(`[ottr] please open ${guiUrl} to investigate and reproduce failures`);
+      } else {
+        await this.exit(1);
+      }
     }
   }
 
-  async exitWhenAllSessionsComplete() {
+  async allSessionsComplete() {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const sess = getSessions();
       if (sess.length > 0 && sess.every(s => s.done)) {
         sess.forEach(this.printSessionSummary);
-        return this.exit(sess.some(s => s.error) ? 1 : 0);
+        if (sess.some(s => s.error)) {
+          throw new Error('some tests failed');
+        }
+        return;
       }
       await sleep(100);
     }
@@ -201,13 +225,13 @@ class Ottr {
     if (s.error) {
       const failed = tests.filter(t => t.error);
       if (failed.length > 0) {
-        console.error(`[ottr] failed: ${failed.length} of ${tests.length}`);
+        console.error(`[ottr] FAILURE: ${failed.length} tests failed out of ${tests.length}`);
       }
       if (s.error !== DEFAULT_ERROR) {
-        console.error(`[ottr] failed: ${s.error || 'unknown error'}`);
+        console.error(`[ottr] FAILURE: ${s.error || 'unknown error'}`);
       }
     } else {
-      console.log(`[ottr] success! ${tests.length} tests passed`);
+      console.log(`[ottr] SUCCESS! ${tests.length} tests passed`);
     }
   };
 }

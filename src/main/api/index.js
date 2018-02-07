@@ -34,19 +34,44 @@ import {once} from '../util';
 
 const ottrTests = {};
 
-const submitTestsToServer = once(() => {
-  console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
-  emitEvent('tests', ottrTests);
-});
+const TEST_DEFINITIONS_TIMEOUT_MS = 5000;
 
-// $FlowFixMe
-window.ottrTestInitFinished = submitTestsToServer;
+let submittedTestsToServer = false;
+const submitTestsToServer = (force = false) => {
+  if (submittedTestsToServer) {
+    return;
+  }
+  const numberOfTests = Object.keys(ottrTests).length;
+  if (!force && numberOfTests === 0) {
+    // Sometimes this gets called prematurely; let's wait for tests to actually fully load before
+    // we submit to the server
+    setTimeout(() => submitTestsToServer(true), TEST_DEFINITIONS_TIMEOUT_MS);
+    return;
+  }
+  submittedTestsToServer = true;
+  console.log(
+      `[ottr] [${currentTestSession || '?'}] submitting ${numberOfTests} tests to server`
+  );
+  emitEvent('tests', ottrTests);
+};
+const maybeSubmitTestsToServer = (...args) => submitTestsToServer();
+
+// Unfortunately ottr is often loaded multiple times, in different Webpack namespaces, so we need to
+// make sure each loaded version has an opportunity to submit tests to the server. So we chain the
+// callbacks here.
+const prev = window.ottrTestInitFinished;
+window.ottrTestInitFinished = function ottrTestInitFinished() {
+  maybeSubmitTestsToServer();
+  if (prev) {
+    prev();
+  }
+};
 
 if (currentTestSession) {
   if (isMainTestRunner) {
-    console.log(`ottr[${currentTestSession}]: preparing to run tests`);
+    console.log(`[ottr] [${currentTestSession}]: preparing to run tests`);
   } else if (currentTestName) {
-    console.log(`ottr[${currentTestSession}]: preparing to run ${currentTestName}`);
+    console.log(`[ottr] [${currentTestSession}]: preparing to run ${currentTestName}`);
   }
 } else {
   console.log('ottr: this frame is not for running anything!');
@@ -64,13 +89,7 @@ export function test(name: string, path: string, fn: (t: any) => any) {
   }
   ottrTests[name] = {name, path, fn};
   if (isMainTestRunner) {
-    window.addEventListener(
-      'load',
-      once(() => {
-        console.log(`submitting ${Object.keys(ottrTests).length} tests to server`);
-        emitEvent('tests', ottrTests);
-      })
-    );
+    window.addEventListener('load', window.ottrTestInitFinished);
   } else if (name === currentTestName) {
     console.log('[ottr] waiting for window.onload event before running test...');
     window.addEventListener(

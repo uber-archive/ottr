@@ -40,17 +40,18 @@ export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
           repl: path.resolve(__dirname, '../ui/repl-helper.js')
         },
         output: {path: folder, filename: '[name]-bundle.js'},
-        resolve: {symlinks: false, alias: {fs: path.resolve(__dirname, 'noop.js')}}
+        resolve: {symlinks: false, alias: {fs: path.resolve(__dirname, 'noop.js')}},
+        watch: true
       },
       (err, stats) => {
         const info = stats.toJson();
 
         if (stats.hasErrors()) {
-          console.error(...info.errors);
+          console.error('[ottr:webpack]', ...info.errors);
         }
 
         if (stats.hasWarnings()) {
-          console.warn(...info.warnings);
+          console.warn('[ottr:webpack]', ...info.warnings);
         }
 
         if (err || stats.hasErrors()) {

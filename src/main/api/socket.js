@@ -52,16 +52,33 @@ export const done = () => emitEvent('done');
 
 export const fail = (reason: ?string) => emitEvent('fail', reason);
 
-if (currentTestSession) {
-  console.log('setting up console proxy');
-  window.console = new Proxy(console, {
+if (currentTestSession && !window.console.isOttrConsoleProxy) {
+  console.log(`[ottr] [${currentTestSession}:${currentTestName || '<root>'}] setting up console proxy`);
+  window.console = new Proxy(window.console, {
+    currentlyInOttrConsoleMethod: false,
     methods: {},
     get(target: typeof console, property) {
+      if (property === 'isOttrConsoleProxy') {
+        return true;
+      }
       if (typeof property === 'string' && typeof target[property] === 'function') {
         if (!this.methods[property]) {
-          this.methods[property] = (...args) => {
-            emitEvent('console', property, ...args);
+          const self = this;
+          this.methods[property] = function ottrConsole(...args) {
+            const enterOttrConsoleMethod = !self.currentlyInOttrConsoleMethod;
+            if (enterOttrConsoleMethod) {
+              self.currentlyInOttrConsoleMethod = true;
+              try {
+                emitEvent('console', property, ...args);
+              } catch (e) {
+                target.error('error posting logs to ottr server', e);
+              }
+            }
+            // $FlowFixMe
             target[property](...args);
+            if (enterOttrConsoleMethod) {
+              self.currentlyInOttrConsoleMethod = false;
+            }
           };
         }
         return this.methods[property];
