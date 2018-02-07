@@ -41,7 +41,7 @@ const colorFromTestProp = ({test}) =>
   test.error ? red : test.done ? green : test.running ? blue : gray;
 
 const Outer = styled.div`
-  width: ${props => (props.fullscreen ? '95%' : '18%')};
+  width: ${props => (props.fullscreen ? '95%' : 250)};
   border: 1px solid ${colorFromTestProp};
   margin: 10px;
 `;

@@ -31,7 +31,7 @@ import {getTestUrl} from '../../util';
 export default function TestRunner({test, fullscreen}: {test: Test, fullscreen?: boolean}) {
   const width = 1024;
   const height = 800;
-  const factor = fullscreen ? 1 : 0.2;
+  const factor = fullscreen ? 1 : 0.25;
   const outer = {overflow: 'hidden', width: width * factor, height: height * factor};
   const inner = {
     width,
