@@ -87,7 +87,11 @@ export const reducer = (state: RunnerState = initialState, action: RunnerAction)
     }
     case 'START_TEST': {
       const {session, name} = action;
-      return produce(state, (s: RunnerState) => (s.sessions[session].tests[name].running = true));
+      return produce(state, (s: RunnerState) => {
+        const t = s.sessions[session].tests[name];
+        t.iteration++;
+        t.running = true;
+      });
     }
     case 'STOP_TEST': {
       const {session, name} = action;
