@@ -30,9 +30,7 @@ fi
 n -q $NODE_VERSION
 
 # Unpm-cli will use the specified node version
-unpm install --development
-
-.jenkins/chrome-docker.sh --headless --disable-gpu --dump-dom https://www.chromestatus.com
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 unpm install --development
 
 # Ensure that `npm` is executed with the specified node version
 n use $NODE_VERSION $(which npm) run jenkins

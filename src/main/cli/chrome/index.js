@@ -49,6 +49,9 @@ export class ChromeRunner {
   ) {
     this.startupCompletePromise = (async () => {
       this.captureCoverage = coverage;
+      if (chromeBinary) {
+        console.log(`[ottr] using Chrome binary at ${chromeBinary}`);
+      }
       this.browser = await puppeteer.launch({
         devtools: !headless,
         executablePath: chromeBinary || undefined
@@ -91,7 +94,9 @@ export class ChromeRunner {
       global.__coverage__ = JSON.parse(JSON.stringify(map));
       Object.keys(global.__coverage__).forEach(x => console.log(x));
     }
-    await this.browser.close();
+    if (this.browser) {
+      await this.browser.close();
+    }
   }
 }
 
