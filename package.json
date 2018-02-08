@@ -26,7 +26,7 @@
     "build": "rm -rf lib && babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* lib/static && npm run postinstall",
     "build-test": "npm run build && babel src -d dist-test --source-maps && mkdir -p dist-test/test/cli/chrome/fixtures && cp -rf fixtures/*.js* dist-test/test/cli/chrome/fixtures",
     "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js && nyc report",
-    "cover-on-docker": "cross-env \"OTTR_OPTS={chromium:'$(PWD)/.jenkins/chrome-docker.sh'}\" npm run cover",
+    "cover-on-docker": "cross-env \"OTTR_OPTS={chromium:'$PWD/.jenkins/chrome-docker.sh'}\" npm run cover",
     "test": "npm run cover",
     "jenkins": "npm run lint && npm run flow && npm run cover-on-docker && flow-coverage-report",
     "flow": "flow check",
