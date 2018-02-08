@@ -22,7 +22,7 @@ export PATH=`pwd`/.n/n/versions/node/$NODE_VERSION/bin:$PATH
 if [ ! -e .n/n/versions/node/$NODE_VERSION/bin ]; then
   mkdir .n
   rm -rf node_modules
-  npm install n
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install n
   mv node_modules .n/
 fi
 

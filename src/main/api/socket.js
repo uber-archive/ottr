@@ -53,7 +53,9 @@ export const done = () => emitEvent('done');
 export const fail = (reason: ?string) => emitEvent('fail', reason);
 
 if (currentTestSession && !window.console.isOttrConsoleProxy) {
-  console.log(`[ottr] [${currentTestSession}:${currentTestName || '<root>'}] setting up console proxy`);
+  console.log(
+    `[ottr] [${currentTestSession}:${currentTestName || '<root>'}] setting up console proxy`
+  );
   window.console = new Proxy(window.console, {
     currentlyInOttrConsoleMethod: false,
     methods: {},

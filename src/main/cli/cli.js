@@ -285,7 +285,7 @@ const args = new Command()
 
 // eslint-disable-next-line no-process-env,no-eval,prefer-const
 let envArgs = eval(`(${process.env.OTTR_OPTS || '{}'})`);
-console.log('envArgs=',envArgs);
+console.log('envArgs=', envArgs);
 for (const k in envArgs) {
   // $FlowFixMe
   if (!(k in args) || typeof args[k] === 'undefined' || args[k] === null) {
