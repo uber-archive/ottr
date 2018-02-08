@@ -69,7 +69,7 @@ export class ScreenshotSequenceCapturer {
       );
 
   logError = (e: Error) => {
-    if (!(e && e.message && e.message.match(/target closed/i))) {
+    if (!(e && e.message && e.message.match(/(target|session) closed/i))) {
       console.error('[ottr] could not capture screenshot from Chrome', e);
     }
   };
