@@ -25,17 +25,22 @@
  */
 
 import type {Test} from '../../types';
+import {DEFAULT_CONCURRENCY} from '../../util';
 
 export const DEFAULT_ERROR = 'tests failed';
 
 class Session {
   id: string;
+  concurrency = DEFAULT_CONCURRENCY;
   tests: {[string]: Test} = {};
   error: ?string;
-  done: boolean = false;
+  done = false;
 
-  constructor(id: string) {
+  constructor(id: string, props?: $Supertype<Session> = {}) {
     this.id = id;
+    if (props.concurrency) {
+      this.concurrency = props.concurrency;
+    }
   }
 
   getTests = () => Object.keys(this.tests).map(name => this.tests[name]);
@@ -68,12 +73,14 @@ export const sessions: SessionStore = {};
 
 export const getSessions = (): Session[] => Object.keys(sessions).map(id => sessions[id].update());
 
-export const createSession = () => {
+export const createSession = (props?: $Supertype<Session>) => {
   let id = Math.round(Math.random() * 1000);
-  while (sessions[`${id}`]) {
+  let idstr;
+  while (sessions[(idstr = `${id}`)]) {
     id++;
   }
-  return `${id}`;
+  sessions[idstr] = new Session(idstr, props);
+  return idstr;
 };
 export const getOrCreateSession = (id: string) => {
   if (sessions[id]) {

@@ -27,6 +27,7 @@
 import type {Test} from './types';
 
 export const UI_BASE_URI = '/_ottr/ui';
+export const DEFAULT_CONCURRENCY = 4;
 
 const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
 

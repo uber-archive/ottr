@@ -81,6 +81,7 @@ const serverOnline = async (u, timeoutMs) => {
 
 type OttrCommand = Command & {
   server?: string,
+  concurrency?: number,
   waitTimeout?: number,
   waitPath?: string,
   inspect?: boolean,
@@ -112,8 +113,16 @@ class Ottr {
       return this.exit(1, true);
     }
 
-    if (!runChrome && this.command.coverage) {
-      return this.exit('you passed --coverage without also passing --chrome/chromium', true);
+    if (!runChrome) {
+      for (const name of ['coverage', 'concurrency', 'inspect', 'screenshots']) {
+        if (this.command[name]) {
+          return this.exit(`you passed --${name} without also passing --chrome/chromium`, true);
+        }
+      }
+    }
+
+    if (runChrome && this.command.inspect && this.command.screenshots) {
+      return this.exit(`sorry, can't use --screenshots with --inspect (it breaks Chrome)`, true);
     }
 
     if (this.command.coverage && this.command.coverage !== 'chrome') {
@@ -146,7 +155,7 @@ class Ottr {
     const useChrome = this.command.chrome || this.command.chromium;
     let guiUrl = ottrUrl;
     if (useChrome) {
-      const sessionId = createSession();
+      const sessionId = createSession({concurrency: this.command.concurrency});
       guiUrl = `${ottrUrl}/session/${sessionId}`;
       console.log(`[ottr] starting Chrome => ${guiUrl}`);
       // TODO: only import puppeteer NPM package if user wants this feature
@@ -249,6 +258,7 @@ const args = new Command()
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
   .option('--coverage <type>', "use 'chrome' for code coverage from Chrome DevTools (see below)")
   .option('--screenshots', 'take screenshots every 100ms')
+  .option('--concurrency <n>', 'number of tests ottr should run in simultaneous iframes', parseInt)
   .option('--wait-timeout <secs>', 'max server startup wait time (see --wait-path)', parseInt)
   .option('--wait-path <path>', 'wait for your server to return 200 for this path (e.g., /health)')
   .option('-d, --debug', 'keep ottr running indefinitely after tests finish')

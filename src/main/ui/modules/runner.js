@@ -40,7 +40,7 @@ type RunnerState = $PropertyType<ReduxStateType, 'runner'>;
 
 type UpdateSessionAction = {
   type: 'UPDATE_SESSION',
-  payload: {id: string, tests: {[string]: Test}}
+  payload: {id: string, concurrency: number, tests: {[string]: Test}}
 };
 export type RunnerAction =
   | {type: 'START_TEST', session: string, name: string}
@@ -54,7 +54,6 @@ const normalizeTestObject = test => {
 };
 
 const initialState: RunnerState = {
-  concurrency: 4,
   sessions: {}
 };
 
@@ -75,8 +74,9 @@ export const reducer = (state: RunnerState = initialState, action: RunnerAction)
     case 'START_SOME_TESTS': {
       const {session} = action;
       return produce(state, (s: RunnerState) => {
-        const tests = getTestsInSession(s.sessions[session]);
-        let numberOfTestsToStart = s.concurrency - tests.filter(test => test.running).length;
+        const sess = s.sessions[session];
+        const tests = getTestsInSession(sess);
+        let numberOfTestsToStart = sess.concurrency - tests.filter(test => test.running).length;
         for (const test of tests) {
           if (!test.running && !test.done && numberOfTestsToStart > 0) {
             numberOfTestsToStart--;
@@ -98,11 +98,11 @@ export const reducer = (state: RunnerState = initialState, action: RunnerAction)
       });
     }
     case 'UPDATE_SESSION': {
-      const {payload: {id, tests}} = action;
+      const {payload: {id, concurrency, tests}} = action;
       return produce(state, (s: RunnerState) => {
         let localSession = s.sessions[id];
         if (!localSession) {
-          localSession = s.sessions[id] = {id, names: [], tests: {}};
+          localSession = s.sessions[id] = {id, concurrency, names: [], tests: {}};
         }
         for (const name in tests) {
           const testFromServer = tests[name];
@@ -134,7 +134,7 @@ const startTestsEpic = (
       const tests = getTestsInSession(session);
       const running = tests.filter(t => t.running);
       const queued = tests.filter(t => !t.running && !t.done && !t.skipped);
-      const shouldBeRunning = Math.min(queued.length, state.concurrency);
+      const shouldBeRunning = Math.min(queued.length, session.concurrency);
       return running.length < shouldBeRunning;
     })
     .switchMap((action: UpdateSessionAction) =>

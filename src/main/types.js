@@ -40,6 +40,7 @@ export type Test = {
 
 export type Session = {
   +id: string,
+  +concurrency: number;
   +names: string[],
   +tests: {[name: string]: Test},
   +done?: boolean,
