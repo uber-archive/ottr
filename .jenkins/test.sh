@@ -32,10 +32,16 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 unpm install --development
 
+echo 'CHECKING DOCKER'
 docker run -i docker-local.artifactory.uber.internal:5922/web/ottr/chrome-image:latest /opt/google/chrome/chrome --no-sandbox --headless --disable-gpu --dump-dom https://www.chromestatus.com
 
+echo 'CHECKING NODE ONCE'
 node_modules/.bin/babel .jenkins/chrome-docker-test.js | node
 
+echo 'CHECKING NODE AGAIN'
+node_modules/.bin/babel .jenkins/chrome-docker-test.js | node
+
+echo 'CHECKING DOCKER AGAIN'
 docker run -i docker-local.artifactory.uber.internal:5922/web/ottr/chrome-image:latest /opt/google/chrome/chrome --no-sandbox --headless --disable-gpu --dump-dom https://www.chromestatus.com
 
 # Ensure that `npm` is executed with the specified node version
