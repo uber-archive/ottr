@@ -32,5 +32,7 @@ n -q $NODE_VERSION
 # Unpm-cli will use the specified node version
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 unpm install --development
 
+node_modules/.bin/babel .jenkins/chrome-docker-test.js | node
+
 # Ensure that `npm` is executed with the specified node version
 n use $NODE_VERSION $(which npm) run jenkins
