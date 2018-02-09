@@ -288,12 +288,14 @@ const args = new Command()
 
 // eslint-disable-next-line no-process-env,no-eval,prefer-const
 let envArgs = eval(`(${process.env.OTTR_OPTS || '{}'})`);
-console.log('envArgs=', envArgs);
 for (const k in envArgs) {
   // $FlowFixMe
   if (!(k in args) || typeof args[k] === 'undefined' || args[k] === null) {
     // $FlowFixMe
     args[k] = envArgs[k];
+    console.log(`[ottr] env var OTTR_OPTS sets '${k}' = ${JSON.stringify(envArgs[k])}`);
+  } else {
+    console.warn(`[ottr] ignoring env var OTTR_OPTS '${k}' because command line takes precedence`);
   }
 }
 new Ottr(args).run();
