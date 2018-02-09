@@ -80,11 +80,12 @@ export async function startOttrServer(targetUrl: string) {
   // ottr command-line interface
   app.use(TESTS_PREFIX, express.static('.'));
 
-  const port = await getPort({host: 'localhost', port: 50505});
+  const host = '0.0.0.0';
+  const port = await getPort({host, port: 50505});
   setupProxy(app, targetUrl, port);
   setupEndpoints(app);
   const url = `http://localhost:${port}/_ottr/ui`;
-  const appServer = app.listen(port, 'localhost', () => console.log(`[ottr] running on ${url}`));
+  const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
   setupWebSockets(appServer);
   return url;
 }
