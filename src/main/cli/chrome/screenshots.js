@@ -77,7 +77,7 @@ export class ScreenshotSequenceCapturer {
   async takeScreenshotAsync() {
     await this.mkdirPromise;
     this.screenshotPromise = this.page.screenshot({
-      fullPage: true,
+      // fullPage: true,
       path: path.resolve(this.screenshotFolder, `ottr-${pad(this.screenshotNumber++, 4)}.png`)
     });
     await this.screenshotPromise;
