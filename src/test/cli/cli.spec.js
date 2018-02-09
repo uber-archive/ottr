@@ -51,8 +51,7 @@ test('success - Chrome + server + imports', async t => {
           t.true(window.ottrServerWorks);
           t.end();
         });`,
-    'server.sh': `
-        #!/bin/sh
+    'server.sh': `#!/bin/sh
         curl -s http://localhost:${port}/confirm-server-launched`
   });
   t.true(launched, 'ottr should launch the web server');
@@ -92,8 +91,7 @@ test('success - Chrome + coverage', async t => {
   await runOttr(
     ['./bypass-istanbul.sh', ''],
     {
-      'bypass-istanbul.sh': `
-      #!/bin/bash
+      'bypass-istanbul.sh': `#!/bin/bash
       set -e
       unset NYC_ROOT_ID NYC_CONFIG NYC_CWD NYC_INSTRUMENTER NYC_PARENT_PID
       export PATH=\${PATH//node-spawn-wrap/XXX}
@@ -129,8 +127,7 @@ test('fails when webpack sees missing dependency', async t => {
         var dep = require('./dep'); 
         ${ALWAYS_PASSES}
     `,
-      'server.sh': `
-        #!/bin/sh
+      'server.sh': `#!/bin/sh
         curl -s http://localhost:${port}/confirm-server-launched`
     });
     t.fail('ottr should not have succeeded');
@@ -207,8 +204,7 @@ test('fails when server startup fails', async t => {
   try {
     await runOttr(`--server server.sh localhost:${port} test.js`, {
       'test.js': ALWAYS_PASSES,
-      'server.sh': `
-        #!/bin/sh
+      'server.sh': `#!/bin/sh
         exit 1`
     });
     t.fail('ottr should not have succeeded');
