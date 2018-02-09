@@ -99,5 +99,3 @@ export class ChromeRunner {
     }
   }
 }
-
-export async function runChrome() {}

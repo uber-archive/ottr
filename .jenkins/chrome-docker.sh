@@ -25,8 +25,10 @@ docker rm -f ottr-chrome || true
 
 # We pass --rm to tell Docker to kill after this run completes. Because Docker kills containers
 # asynchronously, however, we still need that 'docker rm' line above.
-docker run --rm --name ottr-chrome --publish $PORT:$PORT \
+(docker run --rm --name ottr-chrome --publish $PORT:$PORT \
     docker-local.artifactory.uber.internal:5922/web/ottr/chrome-image:latest \
     /opt/google/chrome/chrome --no-sandbox \
     "$@" \
-    --remote-debugging-port=$PORT --remote-debugging-address=0.0.0.0
+    --remote-debugging-port=$PORT --remote-debugging-address=0.0.0.0 \
+    | tee chrome-docker-stdout.log) 3>&1 1>&2 2>&3 \
+    | tee chrome-docker-stderr.log 3>&1 1>&2 2>&3

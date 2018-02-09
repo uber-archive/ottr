@@ -35,7 +35,7 @@ import path from 'path';
 import url from 'url';
 import {logEachLine, nonnull, sleep} from '../util';
 import {Command} from 'commander';
-import {ChromeRunner, runChrome} from './chrome';
+import {ChromeRunner} from './chrome';
 import {spawn} from 'child_process';
 import {createSession, DEFAULT_ERROR, getSessions} from './server/sessions';
 import {startOttrServer} from './server';
@@ -84,6 +84,7 @@ type OttrCommand = Command & {
   concurrency?: number,
   waitTimeout?: number,
   waitPath?: string,
+  host?: string,
   inspect?: boolean,
   chrome?: boolean,
   debug?: boolean,
@@ -112,16 +113,17 @@ class Ottr {
       }
       return this.exit(1, true);
     }
+    const useChrome = this.command.chrome || this.command.chromium;
 
-    if (!runChrome) {
-      for (const name of ['coverage', 'concurrency', 'inspect', 'screenshots']) {
+    if (!useChrome) {
+      for (const name of ['coverage', 'concurrency', 'inspect', 'screenshots', 'host']) {
         if (this.command[name]) {
           return this.exit(`you passed --${name} without also passing --chrome/chromium`, true);
         }
       }
     }
 
-    if (runChrome && this.command.inspect && this.command.screenshots) {
+    if (useChrome && this.command.inspect && this.command.screenshots) {
       return this.exit(`sorry, can't use --screenshots with --inspect (it breaks Chrome)`, true);
     }
 
@@ -145,7 +147,7 @@ class Ottr {
     await packageForBrowser(testFileOrig);
 
     const targetUrl = targetOrig.includes('://') ? targetOrig : `http://${targetOrig}`;
-    const ottrUrl = await startOttrServer(targetUrl);
+    const ottrUrl = await startOttrServer(this.command.host || 'localhost', targetUrl);
 
     await serverOnline(
       url.resolve(targetUrl, this.command.waitPath || ''),
@@ -256,6 +258,7 @@ const args = new Command()
   .option('-s, --server <cmd>', "command ottr uses to launch your server, e.g. 'npm run watch'")
   .option('-c, --chrome', 'opens headless Chrome/Chromium to the ottr UI to run your tests')
   .option('--chromium <path>', 'uses the specified Chrome/Chromium binary to run your tests')
+  .option('--host <ip>', 'Chrome will use this hostname or IP address instead of localhost')
   .option('--coverage <type>', "use 'chrome' for code coverage from Chrome DevTools (see below)")
   .option('--screenshots', 'take screenshots every 100ms')
   .option('--concurrency <n>', 'number of tests ottr should run in simultaneous iframes', parseInt)

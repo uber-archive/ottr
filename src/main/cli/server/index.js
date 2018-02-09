@@ -36,7 +36,7 @@ const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
 const TESTS_PREFIX = '/_ottr/tests';
 
-function setupProxy(app, target, ottrPort) {
+function setupProxy(localhost, app, target, ottrPort) {
   app.use(
     '/',
     proxy(shouldProxy, {
@@ -45,7 +45,7 @@ function setupProxy(app, target, ottrPort) {
       changeOrigin: true,
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
         const contentType = proxyRes.headers['content-type'];
-        const hostAndPort: string = req.get('host') || `localhost:${ottrPort}`;
+        const hostAndPort: string = req.get('host') || `${localhost}:${ottrPort}`;
         const csp = `default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://${hostAndPort}`;
         proxyRes.headers['content-security-policy'] = csp;
         if (contentType && contentType.match(/.*text\/html.*/i)) {
@@ -64,7 +64,7 @@ function setupProxy(app, target, ottrPort) {
   );
 }
 
-export async function startOttrServer(targetUrl: string) {
+export async function startOttrServer(localhost: string, targetUrl: string) {
   const app = express();
 
   // Serve the static files (images, etc)
@@ -80,11 +80,12 @@ export async function startOttrServer(targetUrl: string) {
   // ottr command-line interface
   app.use(TESTS_PREFIX, express.static('.'));
 
+  // TODO: allow user to configure which network interfaces we listen on?
   const host = '0.0.0.0';
   const port = await getPort({host, port: 50505});
-  setupProxy(app, targetUrl, port);
+  setupProxy(localhost, app, targetUrl, port);
   setupEndpoints(app);
-  const url = `http://localhost:${port}/_ottr/ui`;
+  const url = `http://${localhost}:${port}/_ottr/ui`;
   const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
   setupWebSockets(appServer);
   return url;
