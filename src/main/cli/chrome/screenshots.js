@@ -27,7 +27,7 @@
 import path from 'path';
 import mkdirp from 'mkdirp';
 import puppeteer from 'puppeteer';
-import {sleep} from '../../util';
+import {failAfter} from '../../util';
 
 function pad(num, chars) {
   let val = `${num}`;
@@ -97,21 +97,19 @@ export class ScreenshotSequenceCapturer {
     }
   }
 
-  async takeFinalScreenshot() {
-    try {
-      // Take a final screenshot
-      await Promise.race([this.takeScreenshotAsync(), sleep(1000)]);
-    } catch (e) {
-      this.logError(e);
+  async completeMostRecentScreenshot() {
+    if (this.screenshotPromise) {
+      try {
+        await Promise.race([this.screenshotPromise, failAfter(10000)]);
+      } catch (e) {
+        this.logError(e);
+      }
     }
   }
 
-  async completeMostRecentScreenshot() {
+  async takeFinalScreenshot() {
     try {
-      // Wait for most recent screenshot to finish
-      if (this.screenshotPromise) {
-        await Promise.race([this.screenshotPromise, sleep(1000)]);
-      }
+      await Promise.race([this.takeScreenshotAsync(), failAfter(10000)]);
     } catch (e) {
       this.logError(e);
     }

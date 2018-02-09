@@ -61,6 +61,7 @@ export class ChromeRunner {
         await this.page.coverage.startJSCoverage({resetOnNavigation: false});
       }
       this.page.on('console', msg => logEachLine(`[ottr:chrome]`, msg.text()));
+      this.page.goto(url, {timeout: 0}).catch(e => console.error(e));
       if (screenshotIntervalMs) {
         this.screenshots = new ScreenshotSequenceCapturer(
           this.page,
@@ -68,7 +69,6 @@ export class ChromeRunner {
           screenshotIntervalMs
         );
       }
-      this.page.goto(url, {timeout: 0}).catch(e => console.error(e));
       return this.page;
     })();
     this.startupCompletePromise.catch(exit);

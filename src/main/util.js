@@ -76,3 +76,5 @@ export function nonnull<T: Object | string | number | Array<any>>(value?: ?T): T
 }
 
 export const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+export const failAfter = (ms: number): Promise<void> =>
+  new Promise((resolve, reject) => setTimeout(() => reject(`timeout after ${ms}ms`), ms));
