@@ -24,8 +24,7 @@ on port 3000:
 
 ```
 npm install --save-dev ottr
-npm run watch
-node_modules/.bin/ottr localhost:3000 src/test/e2e/index.js
+node_modules/.bin/ottr --server 'npm run watch' localhost:3000 src/test/e2e/index.js
 ```
 
 Then just visit the URL printed to the console (defaults to http://localhost:50505/ottr/ui)
@@ -53,21 +52,6 @@ Options:
   -d, --debug            keep ottr running indefinitely after tests finish
   -i, --inspect          runs Chrome in GUI mode so you can watch tests run interactively
   -h, --help             output usage information
-
-Examples:
-
-  $ ottr --chrome --debug localhost:9999 src/test/e2e.js
-
-      Runs your tests in e2e.js against your local development server using
-      a headless Chrome browser. The --debug option leaves ottr running so
-      you can debug interactively using the browser of your choice. (Your
-      server must already be running on port 9999.)
-
-  $ nyc --reporter=html ottr --coverage=chrome https://google.com dist-test/e2e.js
-
-      Runs your tests against Google's home page, in a Chrome headless
-      browser, with Chrome's built-in code coverage recording. nyc (the
-      istanbul command-line tool) generates an HTML coverage report.
 ```
 
 ## Examples
@@ -87,6 +71,25 @@ test('searching for uuid works', '/', async t => {
   t.end();
 });
 ```
+
+### Command-Line Examples
+
+```
+  $ ottr --chrome --debug localhost:9999 src/test/e2e.js
+```
+
+Runs your tests in e2e.js against your local development server using
+a headless Chrome browser. The --debug option leaves ottr running so
+you can debug interactively using the browser of your choice. (Your
+server must already be running on port 9999.)
+
+```
+  $ nyc --reporter=html ottr --coverage=chrome https://google.com dist-test/e2e.js
+```
+
+Runs your tests against Google's home page, in a Chrome headless
+browser, with Chrome's built-in code coverage recording. nyc (the
+istanbul command-line tool) generates an HTML coverage report.
 
 ## Under the Hood
 
