@@ -54,7 +54,9 @@ export class ChromeRunner {
       }
       this.browser = await puppeteer.launch({
         devtools: !headless,
-        executablePath: chromeBinary || undefined
+        executablePath: chromeBinary || undefined,
+        // eslint-disable-next-line no-process-env
+        args: process.env.TRAVIS ? ['--no-sandbox', '--disable-setuid-sandbox'] : undefined
       });
       this.page = await this.browser.newPage();
       if (coverage) {
