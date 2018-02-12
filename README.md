@@ -2,7 +2,7 @@
 
 # ottr
 
-<img src="https://github.com/uber/ottr/blob/master/src/main/ui/static/images/ottr.png">
+<img src="https://github.com/uber/ottr/blob/master/src/main/ui/static/images/ottr.png" width=200>
 
 Easy, robust end-to-end UI tests for web apps.
 
