@@ -1,0 +1,12 @@
+{
+  "plugins": ["syntax-flow", "transform-flow-strip-types", "transform-class-properties"],
+  "presets": [
+    "react",
+    "stage-2",
+    ["env", {
+      "targets": {
+        "node": "current"
+      }
+    }]
+  ]
+}

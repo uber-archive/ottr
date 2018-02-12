@@ -1,7 +1,8 @@
 .idea/
 coverage/
-/flow-coverage
+flow-coverage/
 dist-test/
+fixtures/
 .nyc_output/
 flow-typed/
 .n/
@@ -17,6 +18,10 @@ lib/static/css/
 .eslintignore
 .eslintrc
 .flowconfig
-uber-ottr-*.tgz
+ottr-*.tgz
 # node profiler
 isolate-*.log
+.travis.yml
+chrome-docker-*.log
+.npmignore
+package-lock.json

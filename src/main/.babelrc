@@ -1,5 +1,5 @@
 {
-  "plugins": ["syntax-flow", "transform-flow-strip-types"],
+  "plugins": ["syntax-flow", "transform-flow-strip-types", "transform-class-properties"],
   "presets": [
     "react",
     "stage-2",
@@ -8,7 +8,8 @@
         "plugins": ["istanbul"]
       },
       "targets": {
-        "node": "current"
+        "browsers": "defaults",        "node": "6.10"
+
       }
     }]
   ]
