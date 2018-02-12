@@ -1,14 +1,14 @@
 {
-  "name": "@uber/ottr",
+  "name": "ottr",
   "version": "0.1.0",
   "description": "Run end-to-end tests in a web browser",
-  "homepage": "https://code.uberinternal.com/diffusion/WEOTTOC/",
+  "homepage": "https://github.com/uber/ottr",
   "bugs": {
-    "url": "https://code.uberinternal.com/diffusion/WEOTTOC/"
+    "url": "https://github.com/uber/ottr/issues"
   },
   "repository": {
     "type": "git",
-    "url": "gitolite@code.uber.internal:web/ottr"
+    "url": "https://github.com/uber/ottr.git"
   },
   "keywords": [
     "testing",
@@ -26,9 +26,8 @@
     "build": "rm -rf lib && babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* lib/static && npm run postinstall",
     "build-test": "npm run build && babel src -d dist-test --source-maps && mkdir -p dist-test/test/cli/chrome/fixtures && cp -rf fixtures/*.js* dist-test/test/cli/chrome/fixtures",
     "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js && nyc report",
-    "cover-on-docker": "cross-env \"OTTR_OPTS={chromium:'$PWD/.jenkins/chrome-docker.sh',host:'$(docker network inspect bridge | jq -r .[0].IPAM.Config[0].Gateway)'}\" npm run cover",
     "test": "npm run cover",
-    "jenkins": "npm run lint && npm run flow && npm run cover-on-docker && flow-coverage-report",
+    "travis": "npm run lint && npm run flow && npm run cover-on-docker && flow-coverage-report",
     "flow": "flow check",
     "check": "npm run prettier && npm run lint && npm run flow && npm run test",
     "prettier": "prettier --single-quote --bracket-spacing false --parser flow --tab-width 2 --print-width 100 --write \"{src,test}/**/*.js\"",
