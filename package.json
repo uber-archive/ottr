@@ -1,6 +1,6 @@
 {
   "name": "ottr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Run end-to-end tests in a web browser",
   "homepage": "https://github.com/uber/ottr",
   "bugs": {
