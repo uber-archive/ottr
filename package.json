@@ -1,6 +1,6 @@
 {
   "name": "ottr",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run end-to-end tests in a web browser",
   "homepage": "https://github.com/uber/ottr",
   "bugs": {
@@ -22,8 +22,7 @@
     "ottr": "lib/cli/cli.js"
   },
   "scripts": {
-    "postinstall": "mkdir -p lib/static/css lib/static/fonts && cp -Rv node_modules/font-awesome/css/* lib/static/css && cp -Rv node_modules/font-awesome/fonts/* lib/static/fonts",
-    "build": "rm -rf lib && babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* lib/static && npm run postinstall",
+    "build": "rm -rf lib && babel src/main -d lib --source-maps && mkdir -p lib/static && cp -Rv src/main/ui/static/* lib/static",
     "build-test": "npm run build && babel src -d dist-test --source-maps && mkdir -p dist-test/test/cli/chrome/fixtures && cp -rf fixtures/*.js* dist-test/test/cli/chrome/fixtures",
     "cover": "cross-env NODE_ENV=test npm run build-test && cross-env NODE_ENV=test nyc node dist-test/test/index.spec.js && nyc report",
     "test": "npm run cover",
@@ -48,6 +47,7 @@
     "commander": "^2.13.0",
     "express": "^4.16.2",
     "font-awesome": "^4.7.0",
+    "fs-extra": "^5.0.0",
     "get-port": "^3.2.0",
     "http-proxy-middleware": "^0.17.4",
     "http-proxy-response-rewrite": "0.0.1",

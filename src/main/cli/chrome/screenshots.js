@@ -25,9 +25,9 @@
  */
 
 import path from 'path';
-import mkdirp from 'mkdirp';
 import puppeteer from 'puppeteer';
 import {failAfter} from '../../util';
+import {asyncMkdirp} from '../util';
 
 function pad(num, chars) {
   let val = `${num}`;
@@ -36,11 +36,6 @@ function pad(num, chars) {
   }
   return val;
 }
-
-const asyncMkdirp = (p, opts?) =>
-  new Promise((resolve, reject) =>
-    mkdirp(p, opts, (err, val) => (err ? reject(err) : resolve(val)))
-  );
 
 export class ScreenshotSequenceCapturer {
   screenshotTimeout: ?TimeoutID;

@@ -31,6 +31,9 @@ import proxy from 'http-proxy-middleware';
 import express from 'express';
 import modifyResponse from 'http-proxy-response-rewrite';
 import path from 'path';
+import {asyncMkdirp} from '../util';
+import {copy} from 'fs-extra';
+import promisify from 'util.promisify';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
@@ -64,11 +67,33 @@ function setupProxy(localhost, app, target, ottrPort) {
   );
 }
 
+const copyAsync = promisify(copy);
+
+async function installFontAwesomeIcons(staticFolder) {
+  await Promise.all([
+    asyncMkdirp(path.resolve(staticFolder, 'css')),
+    asyncMkdirp(path.resolve(staticFolder, 'fonts'))
+  ]);
+  await Promise.all(
+    [
+      'css/font-awesome.css',
+      'fonts/FontAwesome.otf',
+      'fonts/fontawesome-webfont.eot',
+      'fonts/fontawesome-webfont.svg',
+      'fonts/fontawesome-webfont.ttf',
+      'fonts/fontawesome-webfont.woff',
+      'fonts/fontawesome-webfont.woff2'
+    ].map(p => copyAsync(require.resolve(`font-awesome/${p}`), path.resolve(staticFolder, p)))
+  );
+}
+
 export async function startOttrServer(localhost: string, targetUrl: string) {
   const app = express();
 
   // Serve the static files (images, etc)
-  app.use(UI_BASE_URI, express.static(path.resolve(__dirname, '../../static')));
+  const staticFolder = path.resolve(__dirname, '../../static');
+  const faPromise = installFontAwesomeIcons(staticFolder);
+  app.use(UI_BASE_URI, express.static(staticFolder));
 
   // We use React Router, so we need to route all 404's to index.html
   app.use(`${UI_BASE_URI}/*`, (req: express$Request, res: express$Response) =>
@@ -88,5 +113,6 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   const url = `http://${localhost}:${port}/_ottr/ui`;
   const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
   setupWebSockets(appServer);
+  await faPromise;
   return url;
 }
