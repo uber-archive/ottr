@@ -30,7 +30,7 @@ import url from 'url';
 import path from 'path';
 import {asyncMkdirp} from '../util';
 import BufferHelper from 'bufferhelper';
-import {getHarPathForTest} from "../../util";
+import {getHarPathForTest} from '../../util';
 
 function getSessionAndTestName(reqUrl) {
   try {

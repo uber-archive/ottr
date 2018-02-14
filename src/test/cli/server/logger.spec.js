@@ -79,25 +79,29 @@ test('logger writes multiple JSON properly', async t => {
 test('logger parses query string from ottr referer', async t => {
   const {name: dir} = tmp.dirSync();
   const logger = new NetworkLogger(dir);
-  await simulateLog(logger, 
+  await simulateLog(
+    logger,
     mockReq('/zero?ottr-session=xyz&ottr-test=xy', {
       host: 'my-host:3000',
       referer: 'http://my-host:3000/my/path?x=y'
     }),
     mockResp()
   );
-  await simulateLog(logger, 
+  await simulateLog(
+    logger,
     mockReq('/first?x=y', {host: 'my-host:3000', referer: 'http://my-host:3000/my/path?x=y'}),
     mockResp()
   );
-  await simulateLog(logger, 
+  await simulateLog(
+    logger,
     mockReq('/second?x=y', {
       host: 'my-host:3000',
       referer: 'http://my-host:3000/my/path?ottr-session=xyz'
     }),
     mockResp()
   );
-  await simulateLog(logger, 
+  await simulateLog(
+    logger,
     mockReq('/third?x=y', {
       host: 'my-host:3000',
       referer: 'http://my-host:3000/my/path?ottr-session=xyz&ottr-test=a+b'
