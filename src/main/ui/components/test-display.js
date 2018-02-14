@@ -48,15 +48,14 @@ const Outer = styled.div`
 
 const TestName = styled.div`
   flex-grow: 1;
-  font-size: 16px;
+  font-size: 14px;
   padding: 0.5em;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
-  :hover {
-    transform: scale(1.1);
-  }
+  font-family: Ubuntu, sans-serif;
+  font-weight: 500;
 `;
 
 const Header = styled.div`

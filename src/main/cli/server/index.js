@@ -94,10 +94,27 @@ async function installFontAwesomeIcons(dest) {
       'fonts/fontawesome-webfont.ttf',
       'fonts/fontawesome-webfont.woff',
       'fonts/fontawesome-webfont.woff2'
-    ].map(p =>
-      copyAsync(require.resolve(`font-awesome/${p}`), path.resolve(dest, p), {replace: true})
-    )
+    ].map(p => copyAsync(require.resolve(`font-awesome/${p}`), path.resolve(dest, p)))
   );
+}
+
+async function installGoogleFonts(dest) {
+  await Promise.all([asyncMkdirp(path.resolve(dest, 'css/files'))]);
+  await Promise.all([
+    installGoogleFont(dest, 'typeface-open-sans'),
+    installGoogleFont(dest, 'typeface-ubuntu'),
+    installGoogleFont(dest, 'typeface-ubuntu-mono')
+  ]);
+}
+
+async function installGoogleFont(dest, pkgName) {
+  const src = path.dirname(require.resolve(`${pkgName}/index.css`));
+  await Promise.all([
+    copyAsync(path.resolve(src, 'index.css'), path.resolve(dest, `css/${pkgName}.css`)),
+    copyRecursiveAsync(path.resolve(src, 'files'), path.resolve(dest, 'css/files'), {
+      overwrite: true
+    })
+  ]);
 }
 
 async function installHarViewer(dest) {
@@ -114,6 +131,7 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   // Serve the static files (images, etc)
   const staticFolder = path.resolve(__dirname, '../../static');
   const faPromise = installFontAwesomeIcons(staticFolder);
+  const fontsPromise = installGoogleFonts(path.resolve(staticFolder));
   const harPromise = installHarViewer(path.resolve(staticFolder, 'harviewer'));
   app.use(UI_BASE_URI, express.static(staticFolder));
 
@@ -135,6 +153,6 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   const url = `http://${localhost}:${port}/_ottr/ui`;
   const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
   setupWebSockets(appServer);
-  await Promise.all([faPromise, harPromise]);
+  await Promise.all([faPromise, fontsPromise, harPromise]);
   return url;
 }

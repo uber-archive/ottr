@@ -85,10 +85,10 @@ class Tests extends React.Component<Props> {
       <div>
         <DocumentTitle title={`ottr ${emojis}${progress}`} />
         <div style={{display: 'flex'}}>
-          <div>
+          <div style={{margin: 10}}>
             <img src="images/ottr.png" width={100} />
           </div>
-          <div>
+          <div style={{marginLeft: '2em'}}>
             <h1 style={{marginTop: 0}}>ottr</h1>
             <div>running {running.length}</div>
             <div>failed {failed.length}</div>
