@@ -30,8 +30,7 @@ import url from 'url';
 import path from 'path';
 import {asyncMkdirp} from '../util';
 import BufferHelper from 'bufferhelper';
-
-const sanitizeFilename = f => f.replace(/[^a-z0-9'_,. ()[]-]/gi, '_');
+import {getHarPathForTest} from "../../util";
 
 function getSessionAndTestName(reqUrl) {
   try {
@@ -55,8 +54,7 @@ function getHarFilePathFromUrl(reqUrl, referer) {
       test = testFromReferer.test;
     }
     if (session && test) {
-      const sanitizedFilename = sanitizeFilename(test);
-      return `sessions/${session}/${sanitizedFilename}/ottr-${session}-${sanitizedFilename}.har`;
+      return getHarPathForTest(session, test);
     }
     if (session) {
       return `sessions/${session}/ottr-${session}-unknown.har`;

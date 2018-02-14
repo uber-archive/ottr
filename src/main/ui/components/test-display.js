@@ -33,7 +33,7 @@ import styled from 'styled-components';
 import type {Test} from '../../types';
 import {connect} from 'react-redux';
 import {restart, stop} from '../modules/runner';
-import {getTestUrl} from '../../util';
+import {getHarPathForTest, getTestUrl} from '../../util';
 import {FontAwesomeButton} from './controls';
 import {blue, gray, green, red} from '../ui-util';
 
@@ -138,7 +138,8 @@ class TestDisplay extends React.Component<Props, State> {
 
   render() {
     const {test} = this.props;
-    const {error, done, running, output, name} = test;
+    const {session, error, done, running, output, name} = test;
+    const viewHar = `harviewer/?har=/_ottr/tests/ottr/${getHarPathForTest(session, name)}`;
     return (
       <Outer test={test} fullscreen={this.state.fullscreen}>
         <Header test={test}>
@@ -151,6 +152,7 @@ class TestDisplay extends React.Component<Props, State> {
           <div style={{whiteSpace: 'nowrap'}}>
             <FontAwesomeButton name={running || done ? 'refresh' : 'play'} onClick={this.restart} />
             <FontAwesomeButton name="window-restore" href={getTestUrl(test)} target="_blank" />
+            {(running || done) && <FontAwesomeButton name="wifi" href={viewHar} target="_blank" />}
             {running && <FontAwesomeButton name="close" onClick={this.stop} />}
           </div>
         </Header>

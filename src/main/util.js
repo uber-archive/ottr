@@ -29,6 +29,13 @@ import type {Test} from './types';
 export const UI_BASE_URI = '/_ottr/ui';
 export const DEFAULT_CONCURRENCY = 4;
 
+const sanitizeFilename = f => f.replace(/[^a-z0-9'_,. ()[]-]/gi, '_');
+
+export function getHarPathForTest(session: string, test: string) {
+  const sanitizedFilename = sanitizeFilename(test);
+  return `sessions/${session}/${sanitizedFilename}/ottr-${session}-${sanitizedFilename}.har`;
+};
+
 const trimLeadingSlash = str => (str[0] === '/' ? str.substring(1) : str);
 
 const paramString = params =>

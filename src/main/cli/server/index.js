@@ -33,6 +33,7 @@ import modifyResponse from 'http-proxy-response-rewrite';
 import path from 'path';
 import {asyncMkdirp} from '../util';
 import {copy} from 'fs-extra';
+import copyRecursive from 'recursive-copy';
 import promisify from 'util.promisify';
 import {NetworkLogger} from './logger';
 
@@ -77,11 +78,12 @@ function setupProxy(logger, localhost, app, target, ottrPort) {
 }
 
 const copyAsync = promisify(copy);
+const copyRecursiveAsync = promisify(copyRecursive);
 
-async function installFontAwesomeIcons(staticFolder) {
+async function installFontAwesomeIcons(dest) {
   await Promise.all([
-    asyncMkdirp(path.resolve(staticFolder, 'css')),
-    asyncMkdirp(path.resolve(staticFolder, 'fonts'))
+    asyncMkdirp(path.resolve(dest, 'css')),
+    asyncMkdirp(path.resolve(dest, 'fonts'))
   ]);
   await Promise.all(
     [
@@ -92,8 +94,17 @@ async function installFontAwesomeIcons(staticFolder) {
       'fonts/fontawesome-webfont.ttf',
       'fonts/fontawesome-webfont.woff',
       'fonts/fontawesome-webfont.woff2'
-    ].map(p => copyAsync(require.resolve(`font-awesome/${p}`), path.resolve(staticFolder, p)))
+    ].map(p =>
+      copyAsync(require.resolve(`font-awesome/${p}`), path.resolve(dest, p), {replace: true})
+    )
   );
+}
+
+async function installHarViewer(dest) {
+  await asyncMkdirp(dest);
+  const src = path.dirname(require.resolve(`harviewer/webapp/index.php`));
+  await copyRecursiveAsync(src, dest, {overwrite: true});
+  await copyAsync(path.resolve(src, 'index.php'), path.resolve(dest, 'index.html'));
 }
 
 export async function startOttrServer(localhost: string, targetUrl: string) {
@@ -103,6 +114,7 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   // Serve the static files (images, etc)
   const staticFolder = path.resolve(__dirname, '../../static');
   const faPromise = installFontAwesomeIcons(staticFolder);
+  const harPromise = installHarViewer(path.resolve(staticFolder, 'harviewer'));
   app.use(UI_BASE_URI, express.static(staticFolder));
 
   // We use React Router, so we need to route all 404's to index.html
@@ -123,6 +135,6 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   const url = `http://${localhost}:${port}/_ottr/ui`;
   const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
   setupWebSockets(appServer);
-  await faPromise;
+  await Promise.all([faPromise, harPromise]);
   return url;
 }
