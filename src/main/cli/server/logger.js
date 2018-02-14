@@ -160,9 +160,24 @@ const closeAsync = stream =>
     stream.end((err, result) => (err ? reject(err) : resolve(result)))
   );
 
+class PromiseQueue {
+  latestTask: Promise<*> = Promise.resolve();
+
+  enqueue = (fn: () => Promise<*>) => {
+    const result = this.latestTask.then(fn);
+    this.latestTask = result.catch(e => console.error('[ottr] Error logging network traffic', e));
+    return result;
+  };
+}
+
 export class NetworkLogger {
   root: string;
-  timelineStartDates: {[string]: number} = {};
+  perFileState: {
+    [string]: {
+      timelineStartDate?: number,
+      queue: PromiseQueue
+    }
+  } = {};
 
   constructor(rootPath: string) {
     this.root = rootPath;
@@ -205,28 +220,37 @@ export class NetworkLogger {
     console.error('[ottr] error attempting to log network traffic', ...args);
 
   getTimelineStartDateMs(harFilePath: string, req: express$Request) {
-    if (this.timelineStartDates[harFilePath]) {
-      return this.timelineStartDates[harFilePath];
+    const state = this.getState(harFilePath);
+    if (!state.timelineStartDate) {
+      state.timelineStartDate = getRequestStartDate(req);
     }
-    return (this.timelineStartDates[harFilePath] = getRequestStartDate(req));
+    return state.timelineStartDate;
+  }
+
+  getState(harFilePath: string) {
+    if (!this.perFileState[harFilePath]) {
+      this.perFileState[harFilePath] = {queue: new PromiseQueue()};
+    }
+    return this.perFileState[harFilePath];
   }
 
   logAsync = async (req: express$Request, res: express$Response, body: Buffer) => {
     const reqUrl = `${req.protocol}://${req.get('host') || ''}${req.originalUrl}`;
     const harFile = path.resolve(this.root, getHarFilePathFromUrl(reqUrl, req.get('referer')));
-    await asyncMkdirp(path.dirname(harFile));
-    const fd = fs.openSync(harFile, 'a+');
-    const size = fs.fstatSync(fd).size;
-    let start = 0;
-    const append = size > 0;
-    if (append) {
-      start = size - CLOSE_BRACES.length;
-    }
-    const stream = fs.createWriteStream('(ignored cuz we pass fd)', {fd, start, encoding: 'utf8'});
-    if (append) {
-      stream.write(',\n      ');
-    } else {
-      stream.write(`{
+    await this.getState(harFile).queue.enqueue(async () => {
+      await asyncMkdirp(path.dirname(harFile));
+      const fd = fs.openSync(harFile, 'a+');
+      const size = fs.fstatSync(fd).size;
+      let start = 0;
+      const append = size > 0;
+      if (append) {
+        start = size - CLOSE_BRACES.length;
+      }
+      const stream = fs.createWriteStream('(ignored)', {fd, start, encoding: 'utf8'});
+      if (append) {
+        stream.write(',\n      ');
+      } else {
+        stream.write(`{
   "log": {
     "version": "1.2",
     "creator": {
@@ -236,15 +260,13 @@ export class NetworkLogger {
     "pages": ${JSON.stringify([generatePage(reqUrl)], null, 2)},
     "entries": [
       `);
-    }
-    stream.write(
-      JSON.stringify(
-        generateHarEntry(reqUrl, req, res, body, this.getTimelineStartDateMs(harFile, req)),
-        null,
-        2
-      )
-    );
-    stream.write(CLOSE_BRACES);
-    await closeAsync(stream);
+      }
+
+      const startDate = this.getTimelineStartDateMs(harFile, req);
+      const harEntry = generateHarEntry(reqUrl, req, res, body, startDate);
+      stream.write(JSON.stringify(harEntry, null, 2));
+      stream.write(CLOSE_BRACES);
+      await closeAsync(stream);
+    });
   };
 }

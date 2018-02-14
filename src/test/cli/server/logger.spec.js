@@ -116,3 +116,22 @@ test('logger parses query string from ottr referer', async t => {
   t.equal(u('xyz/a b/ottr-xyz-a b.har'), 'https://my-host:3000/third?x=y');
   t.equal(u('xyz/xy/ottr-xyz-xy.har'), 'https://my-host:3000/zero?ottr-session=xyz&ottr-test=xy');
 });
+
+test('logger can handle lots of async traffic', async t => {
+  const {name: dir} = tmp.dirSync();
+  const logger = new NetworkLogger(dir);
+  await Promise.all(
+    [...new Array(1000)].map(() =>
+      simulateLog(
+        logger,
+        mockReq('/zero?ottr-session=xyz&ottr-test=xy', {host: 'my-host:3000'}),
+        mockResp()
+      )
+    )
+  );
+  t.equal(
+    JSON.parse(fs.readFileSync(path.resolve(dir, 'sessions/xyz/xy/ottr-xyz-xy.har'), 'utf8')).log
+      .entries.length,
+    1000
+  );
+});
