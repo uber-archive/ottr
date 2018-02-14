@@ -1,0 +1,94 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "ottr",
+      "version": "0.1.2"
+    },
+    "pages": [
+      {
+        "startedDateTime": "2018-02-09T19:33:45.980Z",
+        "id": "page_1",
+        "title": "https://my-host:3000",
+        "pageTimings": {
+          "onContentLoad": 414.9160000088159,
+          "onLoad": 752.6620000135154
+        }
+      }
+    ],
+    "entries": [
+      {
+        "startedDateTime": "2018-02-09T19:33:46.217Z",
+        "time": 230.00000000745058,
+        "request": {
+          "method": "GET",
+          "url": "https://my-host:3000",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Accept-Encoding",
+              "value": "gzip, deflate, br"
+            }
+          ],
+          "queryString": [],
+          "cookies": [
+            {
+              "name": "_octo",
+              "value": "GH1.1.1755997140.1505140120",
+              "expires": null,
+              "httpOnly": false,
+              "secure": false
+            }
+          ],
+          "headersSize": 1091,
+          "bodySize": 0
+        },
+        "response": {
+          "statusText": "OK",
+          "httpVersion": "HTTP/1.1",
+          "headers": [
+            {
+              "name": "Content-Encoding",
+              "value": "gzip"
+            }
+          ],
+          "cookies": [
+            {
+              "name": "__Host-user_session_same_site",
+              "value": "x1t0Kyfgxvh_U55AnOcZ4DhTHuMa3Z1tZLxJUn7arz_a82It",
+              "path": "/",
+              "expires": "2018-02-23T19:33:46.000Z",
+              "httpOnly": true,
+              "secure": true,
+              "sameSite": "Strict"
+            }
+          ],
+          "content": {
+            "size": 76167,
+            "mimeType": "text/html",
+            "compression": 59149,
+            "text": ""
+          },
+          "redirectURL": "",
+          "headersSize": 2084,
+          "bodySize": 17018,
+          "_transferSize": 19102
+        },
+        "cache": {},
+        "timings": {
+          "blocked": 0.86899999971502,
+          "dns": -1,
+          "ssl": -1,
+          "connect": -1,
+          "send": 0.07300000288523001,
+          "wait": 231.05800000485033,
+          "receive": 0,
+          "_blocked_queueing": -1
+        },
+        "serverIPAddress": "192.30.253.112",
+        "connection": "13015",
+        "pageref": "page_1"
+      }
+    ]
+  }
+}

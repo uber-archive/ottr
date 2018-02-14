@@ -112,7 +112,7 @@ t.end();
         this.setState({err});
       }
     };
-    script.src = '/_ottr/tests/.ottr-webpack/repl-bundle.js';
+    script.src = '/_ottr/tests/ottr/webpack/repl-bundle.js';
     const head: HTMLElement = doc.getElementsByTagName('head')[0];
     head.appendChild(script);
   };

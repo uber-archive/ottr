@@ -29,7 +29,7 @@ import path from 'path';
 
 export const packageForBrowser = (jsEntryPointPath: string): Promise<string> =>
   new Promise((resolve, reject) => {
-    const folder = path.resolve('.ottr-webpack');
+    const folder = path.resolve('ottr/webpack');
     webpack(
       {
         devtool: 'inline-source-map',

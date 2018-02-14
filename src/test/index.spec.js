@@ -39,3 +39,4 @@ test.onFinish(() => process.exit(0));
 import './cli/cli.spec.js';
 import './cli/chrome/chrome.spec.js';
 import './cli/chrome/coverage.spec.js';
+import './cli/server/logger.spec.js';

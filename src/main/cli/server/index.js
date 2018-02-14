@@ -34,26 +34,35 @@ import path from 'path';
 import {asyncMkdirp} from '../util';
 import {copy} from 'fs-extra';
 import promisify from 'util.promisify';
+import {NetworkLogger} from './logger';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
 const TESTS_PREFIX = '/_ottr/tests';
 
-function setupProxy(localhost, app, target, ottrPort) {
+function setupProxy(logger, localhost, app, target, ottrPort) {
+  let requestId = 0;
   app.use(
     '/',
     proxy(shouldProxy, {
       target,
       logLevel: 'warn',
       changeOrigin: true,
+      onProxyReq(proxyReq, req, res) {
+        req.ottrId = requestId++;
+        req.ottrStart = Date.now();
+      },
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
+        logger
+          .log(req, res)
+          .catch(e => console.error('[ottr] error while logging network traffic', e));
         const contentType = proxyRes.headers['content-type'];
         const hostAndPort: string = req.get('host') || `${localhost}:${ottrPort}`;
         const csp = `default-src 'self' 'unsafe-inline' 'unsafe-eval' ws://${hostAndPort}`;
         proxyRes.headers['content-security-policy'] = csp;
         if (contentType && contentType.match(/.*text\/html.*/i)) {
           const originalLength = proxyRes.headers['content-length'];
-          const scriptTag = `<script src='${TESTS_PREFIX}/.ottr-webpack/tests-bundle.js'></script>`;
+          const scriptTag = `<script src='${TESTS_PREFIX}/ottr/webpack/tests-bundle.js'></script>`;
           if (originalLength) {
             proxyRes.headers['content-length'] = Number(originalLength) + scriptTag.length;
           }
@@ -88,6 +97,7 @@ async function installFontAwesomeIcons(staticFolder) {
 }
 
 export async function startOttrServer(localhost: string, targetUrl: string) {
+  const logger = new NetworkLogger(path.resolve('ottr'));
   const app = express();
 
   // Serve the static files (images, etc)
@@ -108,7 +118,7 @@ export async function startOttrServer(localhost: string, targetUrl: string) {
   // TODO: allow user to configure which network interfaces we listen on?
   const host = '0.0.0.0';
   const port = await getPort({host, port: 50505});
-  setupProxy(localhost, app, targetUrl, port);
+  setupProxy(logger, localhost, app, targetUrl, port);
   setupEndpoints(app);
   const url = `http://${localhost}:${port}/_ottr/ui`;
   const appServer = app.listen(port, host, () => console.log(`[ottr] running on ${url}`));
