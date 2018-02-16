@@ -304,7 +304,7 @@ test('kills server when user presses Ctrl+C', async t => {
   const launchedPort = await waitForPortFile(dir);
   await assertServerRunning(t, launchedPort, randomNumber);
   // $FlowFixMe
-  ottrExecution.child.kill('SIGINT');
+  ottrExecution.child.kill();
   try {
     await ottrExecution;
     t.fail('ottr exited with nonzero');
