@@ -102,6 +102,10 @@ class Ottr {
 
   constructor(command: OttrCommand) {
     this.command = command;
+    // catch ctrl-c
+    process.on('SIGINT', this.exit);
+    // catch kill
+    process.on('SIGTERM', this.exit);
   }
 
   run() {

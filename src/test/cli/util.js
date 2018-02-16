@@ -107,19 +107,26 @@ export const startDummyServer = async (
   return app.listen(port);
 };
 
-const run = (cmd, options) =>
-  (new Promise((resolve, reject) => {
-    const child = spawn(cmd, options);
-    child.stdout.on('data', data => logEachLine('[ottr-cli]', data));
-    child.stderr.on('data', data => logEachLine('!ottr-cli!', data));
-    child.on('exit', code => (code === 0 ? resolve() : reject(code)));
-  }): Promise<void>);
+function run(cmd, options) {
+  const child = spawn(cmd, options);
+  child.stdout.on('data', data => logEachLine('[ottr-cli]', data));
+  child.stderr.on('data', data => logEachLine('!ottr-cli!', data));
+  return child;
+}
 
-export const runOttr = async (
+type ExtraProperties = {
+  dir: string,
+  // eslint-disable-next-line camelcase
+  child: child_process$ChildProcess
+};
+
+type MyWeirdPromise = Promise<ExtraProperties> | ExtraProperties;
+
+export const runOttr = (
   cmdline: string | string[],
   files: {[string]: string},
   dirOrig?: string = tmp.dirSync().name
-) => {
+): MyWeirdPromise => {
   let prefix = '';
   let args;
   if (typeof cmdline === 'string') {
@@ -137,8 +144,12 @@ export const runOttr = async (
   const ottrBin = 'node_modules/.bin/ottr';
   const cmd = `${prefix} ${ottrBin} ${args}`.trim();
   console.log(`Running from ${dir} - ${cmd}`);
-  return {
-    dir,
-    promise: await run(cmd, {shell: true, cwd: dir})
-  };
+  const child = run(cmd, {shell: true, cwd: dir});
+  const props = {child, dir};
+  const promise = new Promise((resolve, reject) => {
+    child.on('exit', code => (code === 0 ? resolve(props) : reject(code)));
+  });
+  // $FlowFixMe
+  Object.assign(promise, props);
+  return promise;
 };

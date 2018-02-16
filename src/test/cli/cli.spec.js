@@ -41,6 +41,41 @@ import {sleep} from '../../main/util';
 
 const ALWAYS_PASSES = `require('ottr').test('always passes', '/home', function(t) { t.end(); });`;
 
+const actualExpressServerCodeWhichWritesPortToFile = randomNumber => `
+  const fs = require('fs')
+  const express = require('express')
+  const app = express()
+  app.get('/', (req, res) => res.json({num: ${randomNumber}}))
+  var server = app.listen(0, () => fs.writeFileSync('port.txt', server.address().port));`;
+
+async function waitForPortFile(dir) {
+  for (let i = 0; i < 200; i++) {
+    try {
+      return Number(fs.readFileSync(path.resolve(dir, 'port.txt'), 'utf8'));
+    } catch (e) {
+      await sleep(100);
+    }
+  }
+  throw new Error('port file never written');
+}
+
+async function assertServerRunning(t, launchedPort, randomNumber: number | false) {
+  if (randomNumber) {
+    t.deepEqual(
+      await (await fetch(`http://127.0.0.1:${launchedPort}`)).json(),
+      {num: randomNumber},
+      'launched server running'
+    );
+  } else {
+    try {
+      await fetch(`http://127.0.0.1:${launchedPort}`);
+      t.fail('ottr kills our server');
+    } catch (e) {
+      t.pass('ottr kills our server');
+    }
+  }
+}
+
 test('success - Chrome + server + imports', async t => {
   let launched = false;
   const server = await startDummyServer('', () => (launched = true));
@@ -232,25 +267,11 @@ test('kills server when tests finish', async t => {
     `--server 'node server.js' --chrome --wait-path=/actually-launched localhost:${dummyServerPort} test.js`,
     {
       'test.js': ALWAYS_PASSES,
-      'server.js': `
-       const fs = require('fs')
-       const express = require('express')
-       const app = express()
-       app.get('/', (req, res) => res.json({num: ${randomNumber}}))
-       var server = app.listen(0, () => fs.writeFileSync('port.txt', server.address().port));
-    `
+      'server.js': actualExpressServerCodeWhichWritesPortToFile(randomNumber)
     },
     dir
   );
-  let launchedPort = 0;
-  for (let i = 0; !launchedPort && i < 200; i++) {
-    try {
-      launchedPort = Number(fs.readFileSync(path.resolve(dir, 'port.txt'), 'utf8'));
-    } catch (e) {
-      await sleep(100);
-    }
-  }
-  t.ok(launchedPort, 'ottr launched server');
+  const launchedPort = await waitForPortFile(dir);
   t.deepEqual(
     await (await fetch(`http://127.0.0.1:${launchedPort}`)).json(),
     {num: randomNumber},
@@ -264,6 +285,35 @@ test('kills server when tests finish', async t => {
   } catch (e) {
     t.pass('ottr kills our server');
   }
+  server.close();
+  t.end();
+});
+
+test('kills server when user presses Ctrl+C', async t => {
+  const {name: dir} = tmp.dirSync();
+  const server = await startDummyServer(dir);
+  const dummyServerPort = server.address().port;
+  const randomNumber = Math.round(Math.random() * 10000000);
+  const ottrExecution = runOttr(
+    `--server 'node server.js' localhost:${dummyServerPort} test.js`,
+    {
+      'test.js': ALWAYS_PASSES,
+      'server.js': actualExpressServerCodeWhichWritesPortToFile(randomNumber)
+    },
+    dir
+  );
+  const launchedPort = await waitForPortFile(dir);
+  await assertServerRunning(t, launchedPort, randomNumber);
+  // $FlowFixMe
+  ottrExecution.child.kill('SIGINT');
+  try {
+    await ottrExecution;
+    t.fail('ottr exited with nonzero');
+  } catch (e) {
+    t.pass('ottr exited with nonzero');
+  }
+  await assertServerRunning(t, launchedPort, false);
+
   server.close();
   t.end();
 });
