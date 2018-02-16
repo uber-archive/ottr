@@ -33,7 +33,6 @@ import fetch from 'node-fetch';
 import {sleep} from '../../main/util';
 
 // TODO: test kills Chrome process on exit and ctrl+C
-// TODO: test kills server on ctrl+C
 // TODO: test timeout
 // TODO: test Istanbul coverage
 // TODO: test mix of Istanbul coverage and Chrome coverage

@@ -102,10 +102,10 @@ class Ottr {
 
   constructor(command: OttrCommand) {
     this.command = command;
-    // catch ctrl-c
-    process.on('SIGINT', this.exit);
-    // catch kill
-    process.on('SIGTERM', this.exit);
+    // catch ctrl-c, terminal closing, kill, etc
+    for (const signal of ['SIGINT', 'SIGHUP', 'SIGTERM', 'SIGQUIT', 'SIGABRT']) {
+      process.on(signal, () => this.exit(1));
+    }
   }
 
   run() {
