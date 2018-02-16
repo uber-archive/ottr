@@ -29,7 +29,11 @@ import {FRONTEND_JS, runOttr, startDummyServer} from './util';
 import fs from 'fs';
 import path from 'path';
 import tmp from 'tmp';
+import fetch from 'node-fetch';
+import {sleep} from '../../main/util';
 
+// TODO: test kills Chrome process on exit and ctrl+C
+// TODO: test kills server on ctrl+C
 // TODO: test timeout
 // TODO: test Istanbul coverage
 // TODO: test mix of Istanbul coverage and Chrome coverage
@@ -209,7 +213,56 @@ test('fails when server startup fails', async t => {
     });
     t.fail('ottr should not have succeeded');
   } catch (e) {
-    t.equal(e, 127, 'ottr should fail');
+    t.equal(e, 1, 'ottr should fail');
+  }
+  server.close();
+  t.end();
+});
+
+test('kills server when tests finish', async t => {
+  let tellOttrWeLaunched = false;
+  const {name: dir} = tmp.dirSync();
+  const server = await startDummyServer(dir, () => {}, {
+    '/actually-launched': async (req: express$Request, res: express$Response) =>
+      tellOttrWeLaunched ? res.send('launched') : res.status(404)
+  });
+  const dummyServerPort = server.address().port;
+  const randomNumber = Math.round(Math.random() * 10000000);
+  const ottrExecution = runOttr(
+    `--server 'node server.js' --chrome --wait-path=/actually-launched localhost:${dummyServerPort} test.js`,
+    {
+      'test.js': ALWAYS_PASSES,
+      'server.js': `
+       const fs = require('fs')
+       const express = require('express')
+       const app = express()
+       app.get('/', (req, res) => res.json({num: ${randomNumber}}))
+       var server = app.listen(0, () => fs.writeFileSync('port.txt', server.address().port));
+    `
+    },
+    dir
+  );
+  let launchedPort = 0;
+  for (let i = 0; !launchedPort && i < 200; i++) {
+    try {
+      launchedPort = Number(fs.readFileSync(path.resolve(dir, 'port.txt'), 'utf8'));
+    } catch (e) {
+      await sleep(100);
+    }
+  }
+  t.ok(launchedPort, 'ottr launched server');
+  t.deepEqual(
+    await (await fetch(`http://127.0.0.1:${launchedPort}`)).json(),
+    {num: randomNumber},
+    'launched server running'
+  );
+  tellOttrWeLaunched = true;
+  await ottrExecution;
+  try {
+    await fetch(`http://127.0.0.1:${launchedPort}`);
+    t.fail('ottr kills our server');
+  } catch (e) {
+    t.pass('ottr kills our server');
   }
   server.close();
   t.end();

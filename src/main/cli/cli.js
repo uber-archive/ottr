@@ -43,13 +43,13 @@ import fetch from 'node-fetch';
 
 const DEFAULT_SERVER_STARTUP_TIMEOUT_SECS = 30;
 
-const run = (title: string, cmd: string, options) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(cmd, [], options);
-    child.stdout.on('data', data => logEachLine(`[${title}]`, data));
-    child.stderr.on('data', data => logEachLine(`!${title}!`, data));
-    child.on('exit', code => (code === 0 ? resolve() : reject(code)));
-  });
+const run = (title: string, cmd: string, options, exit) => {
+  const child = spawn(cmd, [], options);
+  child.stdout.on('data', data => logEachLine(`[${title}]`, data));
+  child.stderr.on('data', data => logEachLine(`!${title}!`, data));
+  child.on('exit', code => code > 0 && exit(`server failed with exit code ${code}`));
+  return child;
+};
 
 const serverOnline = async (u, timeoutMs) => {
   let alreadyLogged = false;
@@ -96,6 +96,9 @@ type OttrCommand = Command & {
 class Ottr {
   command: OttrCommand;
   chrome: ChromeRunner;
+  // eslint-disable-next-line camelcase
+  launchedServer: ?child_process$ChildProcess;
+  tryingToExit = false;
 
   constructor(command: OttrCommand) {
     this.command = command;
@@ -141,7 +144,12 @@ class Ottr {
     const [targetOrig, testFileOrig] = this.command.args;
     if (this.command.server) {
       console.log(`[ottr] starting server ${this.command.server}`);
-      run('ottr:server', nonnull(this.command.server), {shell: true}).catch(this.exit);
+      this.launchedServer = run(
+        'ottr:server',
+        nonnull(this.command.server),
+        {shell: true},
+        this.exit
+      );
     }
 
     await packageForBrowser(testFileOrig);
@@ -213,12 +221,23 @@ class Ottr {
   }
 
   exit = async (codeOrError, printHelp?) => {
+    if (this.tryingToExit) {
+      return;
+    }
+    this.tryingToExit = true;
     let code;
     if (typeof codeOrError === 'number') {
       code = codeOrError;
     } else {
       console.error('[ottr] initialization failed', codeOrError);
       code = 1;
+    }
+    try {
+      if (this.launchedServer) {
+        this.launchedServer.kill();
+      }
+    } catch (e) {
+      console.log('error killing your server process', e);
     }
     if (this.chrome) {
       try {

@@ -71,7 +71,8 @@ export const FRONTEND_JS = `
 
 export const startDummyServer = async (
   dirOrig: string = '',
-  launchedCallback: () => any = noop
+  launchedCallback?: () => any = noop,
+  endpoints?: {[string]: express$Middleware} = {}
 ) => {
   const dir = dirOrig.length > 0 ? fs.realpathSync(dirOrig) : dirOrig;
   const port = await getPort();
@@ -84,6 +85,9 @@ export const startDummyServer = async (
     console.log(`[dummy] server got request for ${req.url}`);
     res.send('<script src=frontend.js></script>');
   });
+  for (const p in endpoints) {
+    app.get(p, endpoints[p]);
+  }
   const instrumentedFrontendCode = transform(FRONTEND_JS, {
     filename: `${dir}/src/gui/frontend.js`,
     sourceFileName: `${dir}/src/gui/frontend.js`,
