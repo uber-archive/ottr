@@ -25,11 +25,37 @@
  */
 
 import type {Test} from './types';
+import url from 'url';
 
 export const UI_BASE_URI = '/_ottr/ui';
 export const DEFAULT_CONCURRENCY = 4;
 
 const sanitizeFilename = f => f.replace(/[^a-z0-9'_,. ()[]-]/gi, '_');
+
+type SessionAndTest = {session?: string, test?: string};
+
+export function getSessionAndTestNameForReq(req: express$Request): SessionAndTest {
+  const testFromUrl = getSessionAndTestName(req.originalUrl);
+  const testFromReferer = getSessionAndTestName(req.get('referer') || '');
+  let {session, test} = testFromUrl;
+  if ((!session && testFromReferer.session) || (!test && testFromReferer.test)) {
+    session = testFromReferer.session;
+    test = testFromReferer.test;
+  }
+  return {session, test};
+}
+
+export function getSessionAndTestName(reqUrl: string): SessionAndTest {
+  try {
+    const params = url.parse(reqUrl, true).query || {};
+    return {
+      session: params['ottr-session'],
+      test: params['ottr-test']
+    };
+  } catch (e) {
+    return {};
+  }
+}
 
 export function getHarPathForTest(session: string, test: string) {
   const sanitizedFilename = sanitizeFilename(test);

@@ -26,33 +26,14 @@
  */
 
 import fs from 'fs';
-import url from 'url';
 import path from 'path';
 import {asyncMkdirp} from '../util';
 import BufferHelper from 'bufferhelper';
-import {getHarPathForTest} from '../../util';
+import {getHarPathForTest, getSessionAndTestNameForReq} from '../../util';
 
-function getSessionAndTestName(reqUrl) {
+function getHarFilePathFromUrl(req) {
   try {
-    const params = url.parse(reqUrl, true).query || {};
-    return {
-      session: params['ottr-session'],
-      test: params['ottr-test']
-    };
-  } catch (e) {
-    return {};
-  }
-}
-
-function getHarFilePathFromUrl(reqUrl, referer) {
-  try {
-    const testFromUrl = getSessionAndTestName(reqUrl);
-    const testFromReferer = getSessionAndTestName(referer || '');
-    let {session, test} = testFromUrl;
-    if ((!session && testFromReferer.session) || (!test && testFromReferer.test)) {
-      session = testFromReferer.session;
-      test = testFromReferer.test;
-    }
+    const {session, test} = getSessionAndTestNameForReq(req);
     if (session && test) {
       return getHarPathForTest(session, test);
     }
@@ -236,7 +217,7 @@ export class NetworkLogger {
 
   logAsync = async (req: express$Request, res: express$Response, body: Buffer) => {
     const reqUrl = `${req.protocol}://${req.get('host') || ''}${req.originalUrl}`;
-    const harFile = path.resolve(this.root, getHarFilePathFromUrl(reqUrl, req.get('referer')));
+    const harFile = path.resolve(this.root, getHarFilePathFromUrl(req));
     await this.getState(harFile).queue.enqueue(async () => {
       await asyncMkdirp(path.dirname(harFile));
       const fd = fs.openSync(harFile, 'a+');

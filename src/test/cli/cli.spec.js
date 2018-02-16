@@ -97,6 +97,36 @@ test('success - Chrome + server + imports', async t => {
   t.end();
 });
 
+test('test can inject custom headers', async t => {
+  let gotInjectedHeader = false;
+  const server = await startDummyServer('', () => {}, {
+    '/xyz': (req: express$Request, res: express$Response) => {
+      if (req.get('x-injected') === 'yes') {
+        console.log('good');
+        gotInjectedHeader = true;
+        return res.send('COOL!');
+      }
+      console.log('bad');
+      return res.status(400).send('bad request');
+    }
+  });
+  const port = server.address().port;
+  await runOttr(`--chrome localhost:${port} test.js`, {
+    'test.js': `
+        var ottr = require('ottr');
+        ottr.test('homepage works', {path: '/home', headers: {'x-injected': 'yes'}}, function(t) {
+          t.equal(window.location.pathname, '/home');
+          t.true(window.ottrServerWorks);
+          fetch('/xyz')
+            .then(r => {t.ok(r.ok, 'success'); t.end()})
+            .catch(e => {t.error(e); t.end();});
+        });`
+  });
+  server.close();
+  t.true(gotInjectedHeader, 'saw injected header');
+  t.end();
+});
+
 test('success - Chrome screenshots', async t => {
   const server = await startDummyServer();
   const port = server.address().port;
@@ -258,7 +288,7 @@ test('kills server when tests finish', async t => {
   const {name: dir} = tmp.dirSync();
   const server = await startDummyServer(dir, () => {}, {
     '/actually-launched': async (req: express$Request, res: express$Response) =>
-      tellOttrWeLaunched ? res.send('launched') : res.status(404)
+      tellOttrWeLaunched ? res.send('launched') : res.status(404).send('fail')
   });
   const dummyServerPort = server.address().port;
   const randomNumber = Math.round(Math.random() * 10000000);

@@ -77,17 +77,24 @@ if (currentTestSession) {
   console.log('ottr: this frame is not for running anything!');
 }
 
-export function test(name: string, path: string, fn: (t: any) => any) {
+type Options = {
+  path: string,
+  headers?: {[string]: string | number}
+};
+
+export function test(name: string, pathOrOptions: string | Options, fn: (t: any) => any) {
   if (!name) {
     throw new Error(`test name is ${name}`);
   }
+  const options: Options =
+    typeof pathOrOptions === 'string' ? {path: pathOrOptions} : pathOrOptions;
   if (!isMainTestRunner && !currentTestName) {
     return;
   }
   if (ottrTests[name]) {
     throw new Error(`ottr cannot handle duplicate test names: ${name}`);
   }
-  ottrTests[name] = {name, path, fn};
+  ottrTests[name] = {name, path: options.path, headers: options.headers, fn};
   if (isMainTestRunner) {
     window.addEventListener('load', window.ottrTestInitFinished);
   } else if (name === currentTestName) {

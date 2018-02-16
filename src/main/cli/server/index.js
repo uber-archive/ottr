@@ -25,7 +25,7 @@
  */
 
 import getPort from 'get-port';
-import {UI_BASE_URI} from '../../util';
+import {getSessionAndTestNameForReq, UI_BASE_URI} from '../../util';
 import {setupEndpoints, setupWebSockets} from './endpoints';
 import proxy from 'http-proxy-middleware';
 import express from 'express';
@@ -36,10 +36,25 @@ import {copy} from 'fs-extra';
 import copyRecursive from 'recursive-copy';
 import promisify from 'util.promisify';
 import {NetworkLogger} from './logger';
+import {sessions} from './sessions';
 
 const shouldProxy = (pathname, req) => !pathname.match(/\/_ottr.*/);
 
 const TESTS_PREFIX = '/_ottr/tests';
+
+function injectHeaders(proxyReq, req) {
+  const {session, test} = getSessionAndTestNameForReq(req);
+  if (!(session && test)) {
+    return;
+  }
+  const sess = sessions[session];
+  if (!sess) {
+    return;
+  }
+  const t = sess.tests[test];
+  const headers = (t && t.headers) || {};
+  Object.keys(headers).forEach(name => proxyReq.setHeader(name, headers[name]));
+}
 
 function setupProxy(logger, localhost, app, target, ottrPort) {
   let requestId = 0;
@@ -52,6 +67,7 @@ function setupProxy(logger, localhost, app, target, ottrPort) {
       onProxyReq(proxyReq, req, res) {
         req.ottrId = requestId++;
         req.ottrStart = Date.now();
+        injectHeaders(proxyReq, req);
       },
       onProxyRes(proxyRes: express$Request, req: express$Request, res: express$Response) {
         logger
