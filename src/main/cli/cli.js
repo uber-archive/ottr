@@ -151,7 +151,7 @@ class Ottr {
       this.launchedServer = run(
         'ottr:server',
         nonnull(this.command.server),
-        {shell: true},
+        {shell: true, detached: true},
         this.exit
       );
     }
