@@ -271,19 +271,10 @@ test('kills server when tests finish', async t => {
     dir
   );
   const launchedPort = await waitForPortFile(dir);
-  t.deepEqual(
-    await (await fetch(`http://127.0.0.1:${launchedPort}`)).json(),
-    {num: randomNumber},
-    'launched server running'
-  );
+  await assertServerRunning(t, launchedPort, randomNumber);
   tellOttrWeLaunched = true;
   await ottrExecution;
-  try {
-    await fetch(`http://127.0.0.1:${launchedPort}`);
-    t.fail('ottr kills our server');
-  } catch (e) {
-    t.pass('ottr kills our server');
-  }
+  await assertServerRunning(t, launchedPort, false);
   server.close();
   t.end();
 });
