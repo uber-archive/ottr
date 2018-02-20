@@ -29,7 +29,7 @@
 import 'whatwg-fetch';
 import tapeTest from 'tape';
 import {currentTestName, currentTestSession, isMainTestRunner} from './session';
-import {done, emitEvent} from './socket';
+import {done, emitEvent, fail} from './socket';
 import {once} from '../util';
 
 export {sleep} from '../util';
@@ -103,6 +103,10 @@ export function test(name: string, pathOrOptions: string | Options, fn: (t: any)
       'load',
       once(() => {
         tapeTest.onFinish(done);
+        tapeTest.onFailure(() => {
+          fail('tests failed');
+          done();
+        });
         tapeTest(name, fn);
       })
     );
