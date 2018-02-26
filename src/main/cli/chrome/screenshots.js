@@ -28,6 +28,9 @@ import path from 'path';
 import puppeteer from 'puppeteer';
 import {failAfter} from '../../util';
 import {asyncMkdirp} from '../util';
+import GIFEncoder from 'gifencoder';
+import {PNG} from 'pngjs';
+import fs from 'fs';
 
 function pad(num, chars) {
   let val = `${num}`;
@@ -42,12 +45,15 @@ export class ScreenshotSequenceCapturer {
   screenshotIntervalMs: number;
   screenshotNumber: number = 0;
   screenshotFolder: string;
+  sessionId: string;
   mkdirPromise: Promise<*>;
   screenshotPromise: Promise<*>;
   page: puppeteer.Page;
+  gif: typeof GIFEncoder;
 
   constructor(page: puppeteer.Page, sessionId: string, screenshotIntervalMs: number) {
     this.page = page;
+    this.sessionId = sessionId;
     this.screenshotIntervalMs = screenshotIntervalMs;
     this.screenshotFolder = path.resolve('ottr/sessions', sessionId, 'screenshots');
 
@@ -75,7 +81,27 @@ export class ScreenshotSequenceCapturer {
       // fullPage: true,
       path: path.resolve(this.screenshotFolder, `ottr-${pad(this.screenshotNumber++, 4)}.png`)
     });
-    await this.screenshotPromise;
+    const buf = await this.screenshotPromise;
+    await this.writeGifFrame(buf);
+  }
+
+  async writeGifFrame(buf: Buffer) {
+    const png = new PNG();
+    const metadataPromise = new Promise((resolve, reject) => {
+      png.on('metadata', resolve);
+      png.on('error', reject);
+    });
+    const imgPromise = new Promise(resolve => png.on('parsed', resolve));
+    png.parse(buf);
+    const {width, height} = await metadataPromise;
+    // TODO: check that the width is the same, and rescale if necessary
+    if (!this.gif) {
+      this.gif = new GIFEncoder(width, height);
+      this.gif.start();
+      this.gif.setRepeat(0);
+      this.gif.setDelay(100);
+    }
+    this.gif.addFrame(await imgPromise);
   }
 
   async finish() {
@@ -85,7 +111,15 @@ export class ScreenshotSequenceCapturer {
     }
     await this.completeMostRecentScreenshot();
     await this.takeFinalScreenshot();
+
     if (this.screenshotNumber > 0) {
+      if (this.gif) {
+        this.gif.finish();
+        fs.writeFileSync(
+            path.resolve(this.screenshotFolder, `ottr-${this.sessionId}.gif`),
+            this.gif.out.getData()
+        );
+      }
       console.log(`[ottr] saved ${this.screenshotNumber} screenshots to ${this.screenshotFolder}`);
     } else {
       console.error('[ottr] screenshot capture failed mysteriously');

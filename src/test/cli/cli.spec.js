@@ -143,10 +143,13 @@ test('success - Chrome screenshots', async t => {
   const sessionDir = path.resolve(sessionsDir, fs.readdirSync(sessionsDir)[0]);
   const ssDir = path.resolve(sessionDir, 'screenshots');
   const screenshots = fs.readdirSync(ssDir);
-  if (screenshots.length < 5) {
+  const pngs = screenshots.filter(x => x.match(/.*\.png$/));
+  if (pngs.length < 5) {
     t.fail(`expected at least 5 screenshots in ${ssDir} but got ${screenshots.length}`);
     console.error(screenshots);
   }
+  const gifs = screenshots.filter(x => x.match(/.*\.gif$/));
+  t.equal(gifs.length, 1, 'produced gif');
   server.close();
   t.end();
 });
