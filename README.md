@@ -4,7 +4,9 @@
 
 <img src="https://github.com/uber/ottr/blob/master/src/main/ui/static/images/ottr.png" width=200>
 
-Easy, robust end-to-end UI tests for web apps.
+Easy, robust end-to-end UI tests for web apps. 
+
+*NOTE: this project is no longer actively maintained.*/
 
 Features:
 
